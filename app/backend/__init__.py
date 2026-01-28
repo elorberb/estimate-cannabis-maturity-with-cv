@@ -29,15 +29,15 @@ Example usage:
 
 __version__ = "0.1.0"
 
-from .models import (
+from app.backend.models import (
     AnalysisResult,
     BoundingBox,
     TrichomeDetection,
     TrichomeDistribution,
     TrichomeType,
 )
-from .detector import TrichomeDetector
-from .distribution import (
+from app.backend.detector import TrichomeDetector
+from app.backend.distribution import (
     aggregate_distributions,
     aggregate_results,
     get_maturity_assessment,
@@ -45,8 +45,8 @@ from .distribution import (
     save_distribution,
     save_result,
 )
-from .config import DetectorConfig, CLASS_MAPPINGS, CLASS_ID_TO_NAME
-from .utils import (
+from app.backend.config import DetectorConfig, CLASS_MAPPINGS, CLASS_ID_TO_NAME
+from app.backend.utils import (
     draw_detections,
     load_image,
     save_image,
