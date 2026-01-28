@@ -1,10 +1,10 @@
-"""Tests for app.backend.utils module."""
+"""Tests for src.utils module."""
 
 import numpy as np
 import pytest
 import cv2
 
-from app.backend.utils import (
+from utils import (
     draw_detections,
     load_image,
     resize_image,

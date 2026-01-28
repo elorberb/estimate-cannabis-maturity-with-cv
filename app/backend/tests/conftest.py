@@ -1,9 +1,9 @@
-"""Pytest fixtures for app.backend tests."""
+"""Pytest fixtures for backend tests."""
 
 import numpy as np
 import pytest
 
-from app.backend.models import (
+from models import (
     AnalysisResult,
     BoundingBox,
     TrichomeDetection,

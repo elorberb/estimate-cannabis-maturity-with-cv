@@ -1,6 +1,6 @@
 # Trichome Backend
 
-A simple YOLO-based backend for detecting and classifying cannabis trichomes to calculate maturity distribution.
+A simple YOLO-based backend microservice for detecting and classifying cannabis trichomes to calculate maturity distribution.
 
 ## Features
 
@@ -8,33 +8,41 @@ A simple YOLO-based backend for detecting and classifying cannabis trichomes to 
 - **Trichome classification**: Classifies trichomes as Clear, Cloudy, or Amber
 - **Distribution calculation**: Computes the percentage distribution of trichome types
 - **Maturity assessment**: Provides harvest recommendations based on distribution
-- **Flexible architecture**: Supports both single-stage and two-stage detection
+
+## Project Structure
+
+```
+backend/
+├── src/                  # Source code
+│   ├── __init__.py
+│   ├── models.py         # Data models
+│   ├── detector.py       # TrichomeDetector class
+│   ├── distribution.py   # Distribution calculations
+│   ├── utils.py          # Utilities
+│   └── config.py         # Configuration
+├── tests/                # Tests
+├── pyproject.toml
+├── .gitignore
+└── README.md
+```
 
 ## Installation
 
-Using uv (recommended):
-
 ```bash
-# From project root
+cd app/backend
 uv sync
-```
-
-Or using pip:
-
-```bash
-# From project root
-pip install -e .
 ```
 
 ## Quick Start
 
 ```python
-from app.backend import TrichomeDetector, get_maturity_assessment
+from detector import TrichomeDetector
+from distribution import get_maturity_assessment
 
-# Initialize detector with your YOLO model
+# Initialize detector
 detector = TrichomeDetector(
-    detection_model_path="path/to/yolo_detection_model.pt",
-    classification_model_path="path/to/yolo_classification_model.pt",  # Optional for two-stage
+    detection_model_path="path/to/yolo_model.pt",
+    classification_model_path="path/to/classify_model.pt",  # Optional
 )
 
 # Analyze an image
@@ -42,85 +50,28 @@ result = detector.analyze("cannabis_image.jpg")
 
 # Get distribution
 print(result.distribution.to_dict())
-# Output: {'counts': {'clear': 45, 'cloudy': 120, 'amber': 35, 'total': 200},
-#          'percentages': {'clear': 22.5, 'cloudy': 60.0, 'amber': 17.5}}
+# {'counts': {'clear': 45, 'cloudy': 120, 'amber': 35, 'total': 200},
+#  'percentages': {'clear': 22.5, 'cloudy': 60.0, 'amber': 17.5}}
 
 # Get maturity assessment
 assessment = get_maturity_assessment(result.distribution)
-print(assessment['stage'])  # 'peak'
-print(assessment['recommendation'])  # 'Optimal harvest window for maximum THC potency.'
+print(assessment['recommendation'])
 ```
 
-## API Reference
+## Running Tests
 
-### TrichomeDetector
-
-Main class for trichome detection and classification.
-
-```python
-detector = TrichomeDetector(
-    detection_model_path="model.pt",        # Required: YOLO detection model
-    classification_model_path=None,          # Optional: YOLO classification model
-    confidence_threshold=0.5,                # Detection confidence threshold
-    device="cuda:0",                         # Device: 'cuda:0', 'cpu', etc.
-    bbox_extension_margin=0.25,              # Margin for bbox extension
-)
-
-result = detector.analyze(
-    image="image.jpg",                       # Image path or numpy array
-    filter_large_objects=True,               # Remove outlier detections
-    apply_nms=True,                          # Apply non-maximum suppression
-    nms_iou_threshold=0.7,                   # IoU threshold for NMS
-)
-```
-
-### Data Models
-
-- **TrichomeType**: Enum with CLEAR=1, CLOUDY=2, AMBER=3
-- **BoundingBox**: Represents detection bounding box
-- **TrichomeDetection**: Single detected trichome with type and confidence
-- **TrichomeDistribution**: Distribution of trichome types (counts and percentages)
-- **AnalysisResult**: Complete analysis result with detections and distribution
-
-### Utility Functions
-
-```python
-from app.backend import (
-    aggregate_distributions,    # Combine multiple distributions
-    get_maturity_assessment,    # Get harvest recommendations
-    save_distribution,          # Save distribution to JSON
-    load_distribution,          # Load distribution from JSON
-    visualize_result,           # Draw detections on image
-)
+```bash
+cd app/backend
+uv run pytest tests/ -v
 ```
 
 ## Trichome Types
 
 | Type   | ID | Description |
 |--------|------|-------------|
-| Clear  | 1    | Early stage, immature trichomes |
+| Clear  | 1    | Early stage, immature |
 | Cloudy | 2    | Peak THC potency |
-| Amber  | 3    | Degrading THC, more sedative |
-
-## Maturity Stages
-
-| Stage | Description | Recommendation |
-|-------|-------------|----------------|
-| Early | >50% clear | Too early for harvest |
-| Developing | Mix of clear/cloudy | Approaching harvest window |
-| Peak | >60% cloudy, <15% amber | Optimal THC potency |
-| Mature | 40-60% cloudy, 15-30% amber | Balanced effects |
-| Late | >30% amber | Past peak, sedative effects |
-
-## Running Tests
-
-```bash
-# From project root
-uv run pytest app/backend/tests/ -v
-
-# Or with pip
-pytest app/backend/tests/ -v
-```
+| Amber  | 3    | Degrading THC, sedative |
 
 ## License
 

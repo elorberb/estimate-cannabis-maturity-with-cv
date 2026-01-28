@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import Union
 
-from app.backend.models import AnalysisResult, TrichomeDistribution, TrichomeType
+from models import AnalysisResult, TrichomeDistribution, TrichomeType
 
 logger = logging.getLogger(__name__)
 

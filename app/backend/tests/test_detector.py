@@ -1,11 +1,11 @@
-"""Tests for app.backend.detector module."""
+"""Tests for src.detector module."""
 
 import numpy as np
 import pytest
 from unittest.mock import MagicMock, patch
 
-from app.backend.models import BoundingBox, TrichomeDetection, TrichomeType
-from app.backend.detector import TrichomeDetector
+from models import BoundingBox, TrichomeDetection, TrichomeType
+from detector import TrichomeDetector
 
 
 class TestTrichomeDetectorInit:

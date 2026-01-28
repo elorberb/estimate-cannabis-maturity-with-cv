@@ -27,6 +27,7 @@ dependencies = [
     "numpy>=1.21.0",
     "opencv-python>=4.5.0",
     "ultralytics>=8.0.0",
+    "pydantic>=2.0.0",
 ]
 
 [project.optional-dependencies]
@@ -39,7 +40,7 @@ dev = [
 "Homepage" = "https://github.com/elorberb/thesis"
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

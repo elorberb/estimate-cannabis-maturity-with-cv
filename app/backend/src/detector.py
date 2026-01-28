@@ -7,7 +7,7 @@ from typing import Optional, Union
 import cv2
 import numpy as np
 
-from app.backend.models import (
+from models import (
     AnalysisResult,
     BoundingBox,
     TrichomeDetection,

@@ -1,8 +1,8 @@
-"""Tests for app.backend.models module."""
+"""Tests for src.models module."""
 
 import pytest
 
-from app.backend.models import (
+from models import (
     AnalysisResult,
     BoundingBox,
     TrichomeDetection,

@@ -1,43 +1,41 @@
-"""Data models for trichome detection and classification."""
-
-from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import Optional
+from pydantic import BaseModel, computed_field, model_validator
 
 
 class TrichomeType(IntEnum):
-    """Trichome maturity classification types."""
     CLEAR = 1
     CLOUDY = 2
     AMBER = 3
 
 
-@dataclass
-class BoundingBox:
-    """Represents a bounding box for a detected object."""
+class BoundingBox(BaseModel):
     x_min: float
     y_min: float
     x_max: float
     y_max: float
 
+    @computed_field
     @property
     def width(self) -> float:
         return self.x_max - self.x_min
 
+    @computed_field
     @property
     def height(self) -> float:
         return self.y_max - self.y_min
 
+    @computed_field
     @property
     def area(self) -> float:
         return self.width * self.height
 
+    @computed_field
     @property
     def center(self) -> tuple[float, float]:
         return (self.x_min + self.x_max) / 2, (self.y_min + self.y_max) / 2
 
     def extend(self, margin: float, image_width: int, image_height: int) -> "BoundingBox":
-        """Return a new bounding box extended by the given margin ratio."""
         margin_w = int(margin * self.width)
         margin_h = int(margin * self.height)
         return BoundingBox(
@@ -48,15 +46,12 @@ class BoundingBox:
         )
 
 
-@dataclass
-class TrichomeDetection:
-    """Represents a single detected trichome."""
+class TrichomeDetection(BaseModel):
     bbox: BoundingBox
     trichome_type: TrichomeType
     confidence: float
 
     def to_dict(self) -> dict:
-        """Convert detection to dictionary format."""
         return {
             "bbox": {
                 "x_min": self.bbox.x_min,
@@ -70,31 +65,32 @@ class TrichomeDetection:
         }
 
 
-@dataclass
-class TrichomeDistribution:
-    """Represents the distribution of trichome types in an image."""
+class TrichomeDistribution(BaseModel):
     clear_count: int = 0
     cloudy_count: int = 0
     amber_count: int = 0
 
+    @computed_field
     @property
     def total_count(self) -> int:
         return self.clear_count + self.cloudy_count + self.amber_count
 
+    @computed_field
     @property
     def clear_ratio(self) -> float:
         return self.clear_count / self.total_count if self.total_count > 0 else 0.0
 
+    @computed_field
     @property
     def cloudy_ratio(self) -> float:
         return self.cloudy_count / self.total_count if self.total_count > 0 else 0.0
 
+    @computed_field
     @property
     def amber_ratio(self) -> float:
         return self.amber_count / self.total_count if self.total_count > 0 else 0.0
 
     def to_dict(self) -> dict:
-        """Convert distribution to dictionary format."""
         return {
             "counts": {
                 "clear": self.clear_count,
@@ -110,27 +106,25 @@ class TrichomeDistribution:
         }
 
     @classmethod
-    def from_detections(cls, detections: list[TrichomeDetection]) -> "TrichomeDistribution":
-        """Create distribution from a list of detections."""
+    def from_detections(cls, detections: list["TrichomeDetection"]) -> "TrichomeDistribution":
         clear = sum(1 for d in detections if d.trichome_type == TrichomeType.CLEAR)
         cloudy = sum(1 for d in detections if d.trichome_type == TrichomeType.CLOUDY)
         amber = sum(1 for d in detections if d.trichome_type == TrichomeType.AMBER)
         return cls(clear_count=clear, cloudy_count=cloudy, amber_count=amber)
 
 
-@dataclass
-class AnalysisResult:
-    """Complete result of trichome analysis for an image."""
-    detections: list[TrichomeDetection] = field(default_factory=list)
+class AnalysisResult(BaseModel):
+    detections: list[TrichomeDetection] = []
     distribution: Optional[TrichomeDistribution] = None
     image_path: Optional[str] = None
 
-    def __post_init__(self):
+    @model_validator(mode="after")
+    def compute_distribution(self) -> "AnalysisResult":
         if self.distribution is None and self.detections:
             self.distribution = TrichomeDistribution.from_detections(self.detections)
+        return self
 
     def to_dict(self) -> dict:
-        """Convert result to dictionary format."""
         return {
             "image_path": self.image_path,
             "total_detections": len(self.detections),
