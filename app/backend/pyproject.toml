@@ -3,10 +3,10 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "trichome-app"
+name = "trichome-backend"
 version = "0.1.0"
-description = "A YOLO-based app for detecting and classifying cannabis trichomes"
-readme = "app/backend/README.md"
+description = "A YOLO-based backend for detecting and classifying cannabis trichomes"
+readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
@@ -40,17 +40,16 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["app*"]
 
 [tool.pytest.ini_options]
-testpaths = ["app/backend/tests"]
+testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
 
 [tool.coverage.run]
-source = ["app"]
+source = ["."]
 omit = ["*/tests/*"]
 
 [tool.coverage.report]
