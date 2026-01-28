@@ -5,7 +5,7 @@ A simple YOLO-based backend for detecting and classifying cannabis trichomes
 to calculate maturity distribution.
 
 Example usage:
-    from trichome_backend import TrichomeDetector
+    from app.backend import TrichomeDetector
 
     # Initialize detector with YOLO model
     detector = TrichomeDetector(
@@ -22,7 +22,7 @@ Example usage:
     #  'percentages': {'clear': 22.5, 'cloudy': 60.0, 'amber': 17.5}}
 
     # Get maturity assessment
-    from trichome_backend import get_maturity_assessment
+    from app.backend import get_maturity_assessment
     assessment = get_maturity_assessment(result.distribution)
     print(assessment['recommendation'])
 """

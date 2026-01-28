@@ -12,21 +12,24 @@ A simple YOLO-based backend for detecting and classifying cannabis trichomes to 
 
 ## Installation
 
+Using uv (recommended):
+
 ```bash
-cd trichome_backend
-pip install -e .
+# From project root
+uv sync
 ```
 
-Or install dependencies directly:
+Or using pip:
 
 ```bash
-pip install -r requirements.txt
+# From project root
+pip install -e .
 ```
 
 ## Quick Start
 
 ```python
-from trichome_backend import TrichomeDetector, get_maturity_assessment
+from app.backend import TrichomeDetector, get_maturity_assessment
 
 # Initialize detector with your YOLO model
 detector = TrichomeDetector(
@@ -82,7 +85,7 @@ result = detector.analyze(
 ### Utility Functions
 
 ```python
-from trichome_backend import (
+from app.backend import (
     aggregate_distributions,    # Combine multiple distributions
     get_maturity_assessment,    # Get harvest recommendations
     save_distribution,          # Save distribution to JSON
@@ -112,8 +115,11 @@ from trichome_backend import (
 ## Running Tests
 
 ```bash
-cd trichome_backend
-pytest tests/ -v
+# From project root
+uv run pytest app/backend/tests/ -v
+
+# Or with pip
+pytest app/backend/tests/ -v
 ```
 
 ## License

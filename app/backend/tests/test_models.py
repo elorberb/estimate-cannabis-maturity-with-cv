@@ -1,8 +1,8 @@
-"""Tests for trichome_backend.models module."""
+"""Tests for app.backend.models module."""
 
 import pytest
 
-from trichome_backend.models import (
+from app.backend.models import (
     AnalysisResult,
     BoundingBox,
     TrichomeDetection,

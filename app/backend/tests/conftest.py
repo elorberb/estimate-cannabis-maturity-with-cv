@@ -1,9 +1,9 @@
-"""Pytest fixtures for trichome_backend tests."""
+"""Pytest fixtures for app.backend tests."""
 
 import numpy as np
 import pytest
 
-from trichome_backend.models import (
+from app.backend.models import (
     AnalysisResult,
     BoundingBox,
     TrichomeDetection,

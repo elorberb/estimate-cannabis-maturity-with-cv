@@ -1,10 +1,10 @@
-"""Tests for trichome_backend.distribution module."""
+"""Tests for app.backend.distribution module."""
 
 import json
 import pytest
 
-from trichome_backend.models import AnalysisResult, TrichomeDistribution
-from trichome_backend.distribution import (
+from app.backend.models import AnalysisResult, TrichomeDistribution
+from app.backend.distribution import (
     aggregate_distributions,
     aggregate_results,
     get_maturity_assessment,
