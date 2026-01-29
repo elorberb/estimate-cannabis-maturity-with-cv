@@ -3,7 +3,7 @@
 This research introduces a novel method combining machine learning and computer vision to accurately determine the maturity of cannabis flowers. This is achieved by analyzing trichomes, small hair-like structures on the flowers that are rich in cannabinoids, key ingredients in medical cannabis. The method focuses on the density and appearance of trichomes to gauge flower maturity, which is vital for optimal THC production. The goal is to refine harvest timing, enhance product quality, ensure stable medicinal properties, and reduce cultivation risks. The hypothesis suggests that this approach will greatly improve the efficiency and accuracy of maturity assessment, leading to more consistent and high-quality cannabis products. This research could significantly impact and potentially transform current practices in cannabis cultivation.
 
 <p align="center">
-  <img src="readme_images/cannabis flowers.jpg" alt="Cannabis Flower" width="400" height="400">
+  <img src="docs/images/cannabis flowers.jpg" alt="Cannabis Flower" width="400" height="400">
 </p>
 
 ## 📑 Table of Contents
@@ -20,7 +20,7 @@ Cannabis flower maturity is a critical factor in determining the quality and pot
 
 
 <p align="center">
-  <img src="readme_images/trichome color change cut.png" alt="Cannabis Flower">
+  <img src="docs/images/trichome color change cut.png" alt="Cannabis Flower">
 </p>
 
 ### 🚫 The Challenge
@@ -28,13 +28,13 @@ Cannabis flower maturity is a critical factor in determining the quality and pot
 The current standard for assessing the maturity of cannabis flowers involves the use of a loupe(magnifier). This manual method requires observers to closely inspect the trichomes on the cannabis flower to determine their color and clarity, which indicate the flower's maturity stage. However, this approach is highly subjective and can lead to significant variation in assessments between different observers.
 
 <p align="center">
-  <img src="readme_images/current measurment aproach using loupe.jpg" alt="Manual Inspection Using a Loupe"  width="300" height="300">
+  <img src="docs/images/current measurment aproach using loupe.jpg" alt="Manual Inspection Using a Loupe"  width="300" height="300">
 </p>
 
 In contrast, our project employs advanced image analysis techniques to standardize and automate this process. By using mobile phone camera with a macro lens and computer vision algorithms to detect the color and clarity of trichomes, our method provides a more objective and deterministic approach to assessing maturity. This not only reduces the variability in assessments but also increases the accuracy and reliability of the maturity determination.
 
 <p align="center">
-  <img src="readme_images/our approach for the measurment using phone.jpg" alt="Manual Inspection Using a Loupe"  width="400" height="400">
+  <img src="docs/images/our approach for the measurment using phone.jpg" alt="Manual Inspection Using a Loupe"  width="400" height="400">
 </p>
 
 
@@ -47,7 +47,7 @@ The dataset was created in partnership with Rohama Greenhouse and spans 5 latest
 
 
 <p align="center">
-  <img src="readme_images/images collection process.png" alt="Collecting data process">
+  <img src="docs/images/images collection process.png" alt="Collecting data process">
 </p>
 
 ## 🏷️ Labeling Guidelines
