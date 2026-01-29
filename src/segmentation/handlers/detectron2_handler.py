@@ -43,7 +43,7 @@ def print_version_info():
     print("detectron2:", detectron2.__version__)
 
 
-def imshow(image):
+def show_image(image):
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     plt.imshow(image_rgb)
     plt.show()
@@ -92,7 +92,7 @@ def register_and_split_dataset(dataset_name, release_version, train_ratio=0.8):
     return train_metadata, train_dicts, test_metadata, test_dicts
 
 
-def prepare_and_register_datasets(dataset_name_train, dataset_name_test, release_train, release_test):
+def convert_and_register_datasets(dataset_name_train, dataset_name_test, release_train, release_test):
     _, train_json, train_images = convert_to_coco(dataset_name_train, release_train)
     _, test_json, test_images = convert_to_coco(dataset_name_test, release_test)
 
@@ -107,19 +107,23 @@ def prepare_and_register_datasets(dataset_name_train, dataset_name_test, release
     return metadata_train, dataset_dicts_train, metadata_test, dataset_dicts_test
 
 
-def visualize_sample(d, metadata, scale=0.5):
-    img = cv2.imread(d["file_name"])
+def visualize_image(img, metadata, visualizer_func, scale=0.5):
     visualizer = Visualizer(img[:, :, ::-1], metadata=metadata, scale=scale)
-    out = visualizer.draw_dataset_dict(d)
+    out = visualizer_func(visualizer)
     image_rgb = cv2.cvtColor(out.get_image()[:, :, ::-1], cv2.COLOR_BGR2RGB)
     plt.imshow(image_rgb)
     plt.show()
 
 
-def plot_train_samples(dataset_dicts_train, metadata_train, indices=None, scale=0.5):
-    samples = dataset_dicts_train if indices is None else [dataset_dicts_train[i] for i in indices]
+def visualize_sample(d, metadata, scale=0.5):
+    img = cv2.imread(d["file_name"])
+    visualize_image(img, metadata, lambda v: v.draw_dataset_dict(d), scale)
+
+
+def visualize_samples(dataset_dicts, metadata, indices=None, scale=0.5):
+    samples = dataset_dicts if indices is None else [dataset_dicts[i] for i in indices]
     for d in samples:
-        visualize_sample(d, metadata_train, scale)
+        visualize_sample(d, metadata, scale)
 
 
 def visualize_prediction(d, metadata, predictor, scale=0.5):
@@ -132,27 +136,49 @@ def visualize_prediction(d, metadata, predictor, scale=0.5):
     plt.show()
 
 
-def plot_test_predictions(dataset_dicts_test, metadata_test, predictor, indices=None, scale=0.5):
-    samples = dataset_dicts_test if indices is None else [dataset_dicts_test[i] for i in indices]
+def visualize_predictions(dataset_dicts, metadata, predictor, indices=None, scale=0.5):
+    samples = dataset_dicts if indices is None else [dataset_dicts[i] for i in indices]
     for d in samples:
-        visualize_prediction(d, metadata_test, predictor, scale)
+        visualize_prediction(d, metadata, predictor, scale)
 
 
-def evaluate_model_on_dataset(cfg, predictor):
+def evaluate_model(cfg, predictor):
     evaluator = COCOEvaluator("my_dataset_val", output_dir=os.path.join(cfg.OUTPUT_DIR, "eval_output"))
     val_loader = build_detection_test_loader(cfg, "my_dataset_val")
     return inference_on_dataset(predictor.model, val_loader, evaluator)
 
 
-def extract_object_props(outputs):
+def get_masks_and_labels(outputs):
     mask = outputs["instances"].pred_masks.to("cpu").numpy().astype(bool)
     class_labels = outputs["instances"].pred_classes.to("cpu").numpy()
+    return mask, class_labels
+
+
+def extract_region_props(mask):
     labeled_mask = label(mask)
-    return regionprops(labeled_mask), class_labels
+    return regionprops(labeled_mask)
 
 
-def write_object_info_row(csvwriter, filename, class_name, obj_num, area, centroid, bbox):
+def write_csv_row(csvwriter, filename, class_name, obj_num, area, centroid, bbox):
     csvwriter.writerow([filename, class_name, obj_num, area, centroid, bbox])
+
+
+def get_class_name(class_label, metadata):
+    if class_label == "Unknown":
+        return "Unknown"
+    return metadata.thing_classes[class_label]
+
+
+def process_image_objects(image_path, predictor, metadata, csvwriter):
+    image = cv2.imread(image_path)
+    outputs = predictor(image)
+    mask, class_labels = get_masks_and_labels(outputs)
+    props = extract_region_props(mask)
+
+    for i, prop in enumerate(props):
+        class_label = class_labels[i] if i < len(class_labels) else "Unknown"
+        class_name = get_class_name(class_label, metadata)
+        write_csv_row(csvwriter, os.path.basename(image_path), class_name, i + 1, prop.area, prop.centroid, prop.bbox)
 
 
 def extract_object_info_to_csv(input_images_directory, output_csv_path, predictor, metadata):
@@ -162,43 +188,43 @@ def extract_object_info_to_csv(input_images_directory, output_csv_path, predicto
 
         for image_filename in os.listdir(input_images_directory):
             image_path = os.path.join(input_images_directory, image_filename)
-            new_im = cv2.imread(image_path)
-            outputs = predictor(new_im)
-            props, class_labels = extract_object_props(outputs)
-
-            for i, prop in enumerate(props):
-                class_label = class_labels[i] if i < len(class_labels) else "Unknown"
-                class_name = metadata.thing_classes[class_label] if class_label != "Unknown" else "Unknown"
-                write_object_info_row(csvwriter, image_filename, class_name, i + 1, prop.area, prop.centroid, prop.bbox)
+            process_image_objects(image_path, predictor, metadata, csvwriter)
 
     return f"Object-level information saved to CSV file at {output_csv_path}"
 
 
-def plot_avg_objects_per_class(df, class_names):
+def compute_avg_objects_per_class(df):
     avg_objects = df.groupby(["File Name", "Class Name"])["Object Number"].count().reset_index()
-    avg_objects = avg_objects.groupby("Class Name")["Object Number"].mean().reset_index()
+    return avg_objects.groupby("Class Name")["Object Number"].mean().reset_index()
 
+
+def plot_bar_chart(data, x_col, y_col, title, xlabel, ylabel, order=None):
     plt.figure(figsize=(10, 6))
-    sns.barplot(x="Class Name", y="Object Number", data=avg_objects, order=class_names)
+    sns.barplot(x=x_col, y=y_col, data=data, order=order)
     plt.xticks(rotation=45)
-    plt.xlabel("Class Name")
-    plt.ylabel("Average Number of Objects per Image")
-    plt.title("Average Number of Objects per Image for Each Class")
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
     plt.tight_layout()
     plt.show()
+
+
+def plot_avg_objects_per_class(df, class_names):
+    avg_objects = compute_avg_objects_per_class(df)
+    plot_bar_chart(avg_objects, "Class Name", "Object Number",
+                   "Average Number of Objects per Image for Each Class",
+                   "Class Name", "Average Number of Objects per Image", class_names)
+
+
+def compute_avg_area_per_class(df):
+    return df.groupby("Class Name")["Area"].mean().reset_index()
 
 
 def plot_avg_area_per_class(df, class_names):
-    avg_area = df.groupby("Class Name")["Area"].mean().reset_index()
-
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x="Class Name", y="Area", data=avg_area, order=class_names)
-    plt.xticks(rotation=45)
-    plt.xlabel("Class Name")
-    plt.ylabel("Average Area of Objects")
-    plt.title("Average Area of Objects for Each Class")
-    plt.tight_layout()
-    plt.show()
+    avg_area = compute_avg_area_per_class(df)
+    plot_bar_chart(avg_area, "Class Name", "Area",
+                   "Average Area of Objects for Each Class",
+                   "Class Name", "Average Area of Objects", class_names)
 
 
 def plot_class_statistics(output_csv_path, metadata_train):
