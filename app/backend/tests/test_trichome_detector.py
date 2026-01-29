@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 from models import BoundingBox, TrichomeDetection, TrichomeType
-from detector import TrichomeDetector
+from trichome_detector import TrichomeDetector
 
 
 class TestTrichomeDetectorInit:

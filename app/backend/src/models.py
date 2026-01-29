@@ -131,3 +131,49 @@ class AnalysisResult(BaseModel):
             "detections": [d.to_dict() for d in self.detections],
             "distribution": self.distribution.to_dict() if self.distribution else None,
         }
+
+
+class StigmaDetection(BaseModel):
+    bbox: BoundingBox
+    confidence: float
+    orange_ratio: float = 0.0
+    green_ratio: float = 0.0
+
+    def to_dict(self) -> dict:
+        return {
+            "bbox": {
+                "x_min": self.bbox.x_min,
+                "y_min": self.bbox.y_min,
+                "x_max": self.bbox.x_max,
+                "y_max": self.bbox.y_max,
+            },
+            "confidence": self.confidence,
+            "orange_ratio": round(self.orange_ratio, 4),
+            "green_ratio": round(self.green_ratio, 4),
+        }
+
+
+class StigmaAnalysisResult(BaseModel):
+    detections: list[StigmaDetection] = []
+    overall_orange_ratio: float = 0.0
+    overall_green_ratio: float = 0.0
+    image_path: Optional[str] = None
+
+    @model_validator(mode="after")
+    def compute_overall_ratios(self) -> "StigmaAnalysisResult":
+        if self.detections and self.overall_orange_ratio == 0.0 and self.overall_green_ratio == 0.0:
+            total_orange = sum(d.orange_ratio for d in self.detections)
+            total_green = sum(d.green_ratio for d in self.detections)
+            n = len(self.detections)
+            self.overall_orange_ratio = total_orange / n if n > 0 else 0.0
+            self.overall_green_ratio = total_green / n if n > 0 else 0.0
+        return self
+
+    def to_dict(self) -> dict:
+        return {
+            "image_path": self.image_path,
+            "num_stigmas": len(self.detections),
+            "detections": [d.to_dict() for d in self.detections],
+            "overall_orange_ratio": round(self.overall_orange_ratio, 4),
+            "overall_green_ratio": round(self.overall_green_ratio, 4),
+        }
