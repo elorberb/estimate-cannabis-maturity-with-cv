@@ -20,16 +20,12 @@ Published in **Agriculture** (MDPI, Q1), Volume 16, Issue 4, 2026
 
 ## Table of Contents
 
-1. [Abstract](#abstract)
-2. [Motivation](#motivation)
-3. [Methodology](#methodology)
-4. [Results](#results)
-5. [Project Structure](#project-structure)
-6. [Tech Stack](#tech-stack)
-7. [Dataset](#dataset)
-8. [Installation](#installation)
-
-
+1. [Motivation](#motivation)
+2. [Methodology](#methodology)
+3. [Results](#results)
+4. [Project Structure](#project-structure)
+5. [Dataset](#dataset)
+6. [Installation](#installation)
 
 ## Motivation
 
