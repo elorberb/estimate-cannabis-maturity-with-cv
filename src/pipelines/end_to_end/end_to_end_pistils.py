@@ -2,7 +2,6 @@ import argparse
 import json
 import os
 import re
-import time
 
 import cv2
 import matplotlib.pyplot as plt
@@ -302,10 +301,8 @@ class PistilsPipeline:
         save_images: bool = False,
     ) -> None:
         subfolders = [f.path for f in os.scandir(parent_folder) if f.is_dir()]
-        start_time = time.time()
         for folder in subfolders:
             PistilsPipeline.process_folder(folder, model, green_data, orange_data, output_base_folder, save_images)
-        _ = time.time() - start_time
 
 
 if __name__ == "__main__":

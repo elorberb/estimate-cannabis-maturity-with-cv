@@ -1,11 +1,12 @@
-import streamlit as st
-from streamlit_extras.switch_page_button import switch_page
-import time
 import re
+import time
+import uuid
+
 import constants as const
 import db_utils
+import streamlit as st
 import streamlit_utils as st_utils
-import uuid
+from streamlit_extras.switch_page_button import switch_page
 
 st.set_page_config(
     page_title="Introduction",

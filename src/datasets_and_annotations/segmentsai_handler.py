@@ -9,11 +9,10 @@ from segments.utils import bitmap2file
 from src.config.paths import Paths
 from src.config.settings import ANNOTATIONS_CLASS_MAPPINGS, WEEKS_DIR, ZOOM_TYPES_DIR
 
-load_dotenv()
-
 
 class SegmentsAIHandler:
     def __init__(self) -> None:
+        load_dotenv()
         api_key = os.getenv("SEGMENTS_API_KEY")
         self._client = SegmentsClient(api_key)
 

@@ -16,7 +16,7 @@ logger = Logging.get_logger(__name__)
 
 class EndToEndUtils:
     @staticmethod
-    def load_detection_model(model_config: dict, patch_size: int = 512, device: str = "cuda:0"):
+    def load_detection_model(model_config: dict, patch_size: int = 512, device: str = "cuda:0") -> object:
         logger.info("Loading detection model")
         return AutoDetectionModel.from_pretrained(
             model_type="detectron2",

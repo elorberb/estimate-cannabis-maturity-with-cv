@@ -11,7 +11,6 @@ from src.config.settings import (
     ULTRALYTICS_WEIGHTS_DIR,
 )
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 ULTRALYTICS_CHECKPOINT_PATHS = "/home/etaylor/code_projects/thesis/checkpoints/ultralytics"
