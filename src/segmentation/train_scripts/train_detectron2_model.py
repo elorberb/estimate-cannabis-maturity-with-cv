@@ -1,110 +1,93 @@
 import argparse
+import json
 import logging
 import os
-import torch
-from detectron2.utils.logger import setup_logger
-from detectron2.config import get_cfg
-from detectron2.engine import DefaultTrainer, DefaultPredictor
-from detectron2 import model_zoo
 from datetime import datetime
-from src.segmentation.framework_handlers.detectron2_handler import (
-    prepare_and_register_datasets,
-)
+
+import torch
 import yaml
-
-from detectron2.evaluation import COCOEvaluator, inference_on_dataset
+from detectron2 import model_zoo
+from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader
-import json
+from detectron2.engine import DefaultPredictor, DefaultTrainer
+from detectron2.evaluation import COCOEvaluator, inference_on_dataset
+from detectron2.utils.logger import setup_logger
 
+from src.segmentation.handlers.detectron2_handler import Detectron2Handler
 
-# Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("detectron2")
 
+DETECTRON2_MODELS_PATH = "/home/etaylor/code_projects/thesis/checkpoints/detectron2"
+DATASET_NAME_TRAIN = "etaylor/cannabis_patches_train_26-04-2024_15-44-44"
+DATASET_NAME_TEST = "etaylor/cannabis_patches_test_26-04-2024_15-44-44"
+RELEASE = "v0.1"
 
-def setup():
-    torch.cuda.empty_cache()  # Free up unutilized memory
-    setup_logger()
 
+class Detectron2Trainer:
+    @staticmethod
+    def setup() -> None:
+        torch.cuda.empty_cache()
+        setup_logger()
 
-def train_and_eval_detectron2(model):
-    logger.info(f"Training and evaluating model {model}")
-    current_time = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-    detectron2_models_path = "/home/etaylor/code_projects/thesis/checkpoints/detectron2"
-    model_saving_path = os.path.join(detectron2_models_path, model, current_time)
-    os.makedirs(model_saving_path, exist_ok=True)
+    @staticmethod
+    def train_and_evaluate(model: str) -> None:
+        logger.info(f"Training and evaluating model {model}")
+        current_time = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+        model_saving_path = os.path.join(DETECTRON2_MODELS_PATH, model, current_time)
+        os.makedirs(model_saving_path, exist_ok=True)
 
-    # dataset used for the training
-    dataset_name_train = "etaylor/cannabis_patches_train_26-04-2024_15-44-44"
-    dataset_name_test = "etaylor/cannabis_patches_test_26-04-2024_15-44-44"
-    release_train = "v0.1"
-    release_test = "v0.1"
+        handler = Detectron2Handler()
+        handler.prepare_and_register_datasets(
+            DATASET_NAME_TRAIN, DATASET_NAME_TEST, RELEASE, RELEASE
+        )
 
-    # Register and prepare datasets
-    _, _, _, _ = prepare_and_register_datasets(
-        dataset_name_train, dataset_name_test, release_train, release_test
-    )
+        cfg = get_cfg()
+        cfg.OUTPUT_DIR = model_saving_path
+        cfg.merge_from_file(model_zoo.get_config_file(f"{model}.yaml"))
+        cfg.DATASETS.TRAIN = (DATASET_NAME_TRAIN,)
+        cfg.DATASETS.TEST = ()
+        cfg.INPUT.MASK_FORMAT = "bitmask"
+        cfg.DATALOADER.NUM_WORKERS = 2
+        cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(f"{model}.yaml")
+        cfg.SOLVER.IMS_PER_BATCH = 2
+        cfg.SOLVER.BASE_LR = 0.00025
+        cfg.SOLVER.MAX_ITER = 18450
+        cfg.SOLVER.STEPS = []
+        cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512
+        cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
 
-    cfg = get_cfg()
-    cfg.OUTPUT_DIR = model_saving_path
-    cfg.merge_from_file(model_zoo.get_config_file(f"{model}.yaml"))
-    cfg.DATASETS.TRAIN = (dataset_name_train,)
-    cfg.DATASETS.TEST = ()
-    cfg.INPUT.MASK_FORMAT = "bitmask"
-    cfg.DATALOADER.NUM_WORKERS = 2
-    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(
-        f"{model}.yaml"
-    )  # Let training initialize from model zoo
-    cfg.SOLVER.IMS_PER_BATCH = (
-        2  # This is the real "batch size" commonly known to deep learning people
-    )
-    cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
-    cfg.SOLVER.MAX_ITER = 18450  # 100 epochs
-    cfg.SOLVER.STEPS = []  # do not decay learning rate
-    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512  # Default is 512.
-    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
+        os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
+        trainer = DefaultTrainer(cfg)
+        trainer.resume_or_load(resume=False)
+        trainer.train()
 
-    os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
-    trainer = DefaultTrainer(cfg)
-    trainer.resume_or_load(resume=False)
-    trainer.train()
+        config_yaml_path = os.path.join(cfg.OUTPUT_DIR, "config.yaml")
+        with open(config_yaml_path, "w") as file:
+            yaml.dump(cfg, file)
 
-    # Save the configuration to a config.yaml file
-    config_yaml_path = os.path.join(cfg.OUTPUT_DIR, "config.yaml")
-    logger.info(f"saving config to {config_yaml_path}")
-    with open(config_yaml_path, "w") as file:
-        yaml.dump(cfg, file)
+        cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
+        cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
+        predictor = DefaultPredictor(cfg)
 
-    cfg.MODEL.WEIGHTS = os.path.join(
-        cfg.OUTPUT_DIR, "model_final.pth"
-    )  # path to the model we just trained
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set a custom testing threshold
-    predictor = DefaultPredictor(cfg)
+        coco_evaluator = COCOEvaluator(
+            DATASET_NAME_TEST, output_dir=os.path.join(cfg.OUTPUT_DIR, DATASET_NAME_TEST)
+        )
+        val_loader = build_detection_test_loader(cfg, DATASET_NAME_TEST)
+        evaluation_results = inference_on_dataset(predictor.model, val_loader, coco_evaluator)
 
-    evaluator = COCOEvaluator(
-        dataset_name_test, output_dir=os.path.join(cfg.OUTPUT_DIR, dataset_name_test)
-    )
-    val_loader = build_detection_test_loader(cfg, dataset_name_test)
-    eval_results = inference_on_dataset(predictor.model, val_loader, evaluator)
+        output_dir = os.path.join(cfg.OUTPUT_DIR, os.path.basename(DATASET_NAME_TEST))
+        os.makedirs(output_dir, exist_ok=True)
 
-    # Check if the directory exists
-    output_dir = os.path.join(cfg.OUTPUT_DIR, os.path.basename(dataset_name_test))
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
-
-    eval_results_saving_path = os.path.join(
-        cfg.OUTPUT_DIR, os.path.basename(dataset_name_test), "evaluation_results.json"
-    )
-    # Save the eval_results dictionary to a JSON file
-    with open(eval_results_saving_path, "w") as file:
-        json.dump(eval_results, file, indent=4)
+        results_saving_path = os.path.join(output_dir, "evaluation_results.json")
+        with open(results_saving_path, "w") as file:
+            json.dump(evaluation_results, file, indent=4)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train a Detectron2 model.")
-    parser.add_argument("--model", required=True, help="Name of the model to train.")
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", required=True)
     args = parser.parse_args()
 
-    setup()
-    train_and_eval_detectron2(args.model)
+    Detectron2Trainer.setup()
+    Detectron2Trainer.train_and_evaluate(args.model)

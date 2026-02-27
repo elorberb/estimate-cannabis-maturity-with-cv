@@ -1,6 +1,7 @@
-import os
-import json
 import csv
+import json
+import os
+
 import numpy as np
 
 

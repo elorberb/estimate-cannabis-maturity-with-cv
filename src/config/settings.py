@@ -1,5 +1,5 @@
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 ROOT_IMAGES_DIR = Path("/sise/home/etaylor/images/")
 RAW_IMAGE_DIR = ROOT_IMAGES_DIR / "raw_images"
@@ -35,6 +35,15 @@ ANNOTATIONS_CLASS_MAPPINGS = {
 CANNABIS_PATCH_SIZE = 512
 DATETIME_FORMAT = "%d-%m-%Y_%H-%M-%S"
 
+GOOD_QUALITY_IMAGES_CSV = Path("/home/etaylor/code_projects/thesis/metadata/good_quality_images.csv")
+SEGMENTS_FOLDER = "/home/etaylor/code_projects/thesis/segments"
 
-def get_datetime_str():
-    return datetime.now().strftime(DATETIME_FORMAT)
+ULTRALYTICS_RUNS_DIR = "/home/etaylor/code_projects/thesis/src/segmentation/notebooks/ultralytics/runs"
+ULTRALYTICS_WEIGHTS_DIR = "/home/etaylor/code_projects/thesis/src/segmentation/notebooks/ultralytics/weights"
+ULTRALYTICS_DATASETS_DIR = "/home/etaylor/code_projects/thesis/src/segmentation/notebooks/ultralytics/datasets"
+
+
+class DateUtils:
+    @staticmethod
+    def get_datetime_str() -> str:
+        return datetime.now().strftime(DATETIME_FORMAT)

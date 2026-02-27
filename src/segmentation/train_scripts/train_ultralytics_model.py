@@ -1,64 +1,67 @@
 import argparse
 import logging
-import torch
-from ultralytics import YOLO, RTDETR, settings
-import config
-import os 
+import os
 
-# Setup basic configuration for logging
+import torch
+from ultralytics import RTDETR, YOLO, settings
+
+from src.config.settings import (
+    ULTRALYTICS_DATASETS_DIR,
+    ULTRALYTICS_RUNS_DIR,
+    ULTRALYTICS_WEIGHTS_DIR,
+)
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def empty_cuda_cache():
-    """Empty unused memory from CUDA."""
-    torch.cuda.empty_cache()
-    logger.info("Cleared CUDA cache")
+ULTRALYTICS_CHECKPOINT_PATHS = "/home/etaylor/code_projects/thesis/checkpoints/ultralytics"
 
-def setup_ultralytics_settings():
-    """Setup settings for Ultralytics usage based on the configuration."""
-    settings.update({
-        'runs_dir': config.ULTRALYTICS_RUNS_DIR,
-        'weights_dir': config.ULTRALYTICS_WEIGHTS_DIR,
-        'datasets_dir': config.ULTRALYTICS_DATASETS_DIR
-    })
-    logger.info("Ultralytics settings updated:\n%s", settings)
 
-def train_model(config_yaml, model_checkpoint, epochs=100, imgsz=512):
-    """Train the model using specified configurations."""
-    ultralytics_checkpoint_paths = "/home/etaylor/code_projects/thesis/checkpoints/ultralytics"
-    model_checkpoint_path = os.path.join(ultralytics_checkpoint_paths, model_checkpoint)
+class UltralyticsTrainer:
+    @staticmethod
+    def empty_cuda_cache() -> None:
+        torch.cuda.empty_cache()
+        logger.info("Cleared CUDA cache")
 
-    if model_checkpoint == 'rtdetr-x.pt':
-        model = RTDETR(model_checkpoint_path)
-    else:
-        model = YOLO(model_checkpoint_path)
-    
-    results = model.train(data=config_yaml, epochs=epochs, imgsz=imgsz)
-    return model, results
+    @staticmethod
+    def setup_ultralytics_settings() -> None:
+        settings.update({
+            "runs_dir": ULTRALYTICS_RUNS_DIR,
+            "weights_dir": ULTRALYTICS_WEIGHTS_DIR,
+            "datasets_dir": ULTRALYTICS_DATASETS_DIR,
+        })
+        logger.info("Ultralytics settings updated:\n%s", settings)
 
-def validate_model(model):
-    """Validate the model and log the results."""
-    valid_results = model.val()
-    logger.info("Validation results:\n%s", valid_results)
-    return valid_results
+    @staticmethod
+    def train_model(config_yaml: str, model_checkpoint: str, epochs: int = 100, imgsz: int = 512):
+        model_checkpoint_path = os.path.join(ULTRALYTICS_CHECKPOINT_PATHS, model_checkpoint)
 
-def main(args):
-    """Main function to execute training and validation."""
-    empty_cuda_cache()
-    setup_ultralytics_settings()
+        model = RTDETR(model_checkpoint_path) if model_checkpoint == "rtdetr-x.pt" else YOLO(model_checkpoint_path)
+        results = model.train(data=config_yaml, epochs=epochs, imgsz=imgsz)
+        return model, results
 
-    logger.info(f"Starting training of Ultralytics model {args.checkpoint}")
-    model, results = train_model(args.model_type, args.config, args.checkpoint, args.epochs, args.imgsz)
-    logger.info("Training results:\n%s", results)
+    @staticmethod
+    def validate_model(model) -> None:
+        valid_results = model.val()
+        logger.info("Validation results:\n%s", valid_results)
 
-    validate_model(model)
+    @staticmethod
+    def run(args) -> None:
+        UltralyticsTrainer.empty_cuda_cache()
+        UltralyticsTrainer.setup_ultralytics_settings()
+
+        logger.info(f"Starting training of Ultralytics model {args.checkpoint}")
+        model, results = UltralyticsTrainer.train_model(args.config, args.checkpoint, args.epochs, args.imgsz)
+        logger.info("Training results:\n%s", results)
+
+        UltralyticsTrainer.validate_model(model)
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train and Validate Ultralytics models.")
-    parser.add_argument('--config', type=str, required=True, help='Path to config YAML file')
-    parser.add_argument('--checkpoint', type=str, default='', help='Path to model checkpoint file')
-    parser.add_argument('--epochs', type=int, default=100, help='Number of epochs to train the model')
-    parser.add_argument('--imgsz', type=int, default=512, help='Image size for training')
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, required=True)
+    parser.add_argument("--checkpoint", type=str, default="")
+    parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--imgsz", type=int, default=512)
 
-    args = parser.parse_args()
-    main(args)
+    UltralyticsTrainer.run(parser.parse_args())

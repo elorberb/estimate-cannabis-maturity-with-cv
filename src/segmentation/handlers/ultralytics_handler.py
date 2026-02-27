@@ -1,6 +1,5 @@
-from IPython import display as ipydisplay
 import ultralytics
-
+from IPython import display as ipydisplay
 
 ULTRALYTICS_MODELS = [
     "rtdetr-x.pt",
@@ -10,6 +9,8 @@ ULTRALYTICS_MODELS = [
 ]
 
 
-def validate_version_and_gpu():
-    ipydisplay.clear_output(wait=True)
-    ultralytics.checks()
+class UltralyticsHandler:
+    @staticmethod
+    def validate_version_and_gpu() -> None:
+        ipydisplay.clear_output(wait=True)
+        ultralytics.checks()
