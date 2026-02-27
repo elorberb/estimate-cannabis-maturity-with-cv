@@ -1,106 +1,72 @@
-""" 
-Model Assist Label Pipeline Stages:
-
-    Sets up the Segments.ai API connection.
-    Trains the model on the specified dataset.
-    Creates a new dataset for testing from a specific image patches.
-    Uploads images to the new dataset.
-    Creates a release and uploads predictions as annotations to the dataset.
-"""
-
-from src.datasets_and_annotations.segmentsai_handler import SegmentsAIHandler
 from segments import SegmentsDataset
-import config
 
-segmentsai_handler = SegmentsAIHandler()
-
-
-def train_segmentation_model(train_dataset_name):
-    # TODO: implement this based on the best model achieved for the segmentation/detection task
-    model = None
-    return model
+from src.config.paths import Paths
+from src.config.settings import WEEKS_DIR, ZOOM_TYPES_DIR
+from src.datasets_and_annotations.segmentsai_handler import SegmentsAIHandler
 
 
-def create_new_test_dataset(image_name, week, zoom_type, single_category=True):
-    dataset_name = f"cannabis_patches_{week}_{zoom_type}_{image_name}"
-    description = (
-        f"cannabis patches week={week} zoom_type={zoom_type} of image={image_name}."
-    )
-    task_type = "segmentation-bitmap"
-    if single_category:
-        task_attributes = {
-            "format_version": "0.1",
-            "categories": [{"name": "trichome", "id": 0, "color": [65, 117, 5]}],
-        }
-    else:
-        task_attributes = {
-            "format_version": "0.1",
-            "categories": [
-                {"name": "trichome", "id": 0, "color": [65, 117, 5]},
-                {"name": "clear", "id": 1, "color": [155, 155, 155]},
-                {"name": "cloudy", "id": 2, "color": [255, 255, 255]},
-                {"name": "amber", "id": 3, "color": [245, 166, 35]},
-            ],
-        }
+class ModelAssistPipeline:
+    def __init__(self) -> None:
+        self._segments_handler = SegmentsAIHandler()
 
-    TEST_DATASET = f"etaylor/{dataset_name}"
+    def _train_segmentation_model(self, train_dataset_name: str):
+        return None
 
-    # Create the dataset:
-    test_dataset_instance = segmentsai_handler.create_new_dataset(
-        dataset_name, description, task_type, task_attributes
-    )
-    print(test_dataset_instance)
+    def _create_new_test_dataset(
+        self, image_name: str, week: str, zoom_type: str, single_category: bool = True
+    ) -> str:
+        dataset_name = f"cannabis_patches_{week}_{zoom_type}_{image_name}"
+        description = f"cannabis patches week={week} zoom_type={zoom_type} of image={image_name}."
+        task_type = "segmentation-bitmap"
 
-    return TEST_DATASET
+        if single_category:
+            task_attributes = {
+                "format_version": "0.1",
+                "categories": [{"name": "trichome", "id": 0, "color": [65, 117, 5]}],
+            }
+        else:
+            task_attributes = {
+                "format_version": "0.1",
+                "categories": [
+                    {"name": "trichome", "id": 0, "color": [65, 117, 5]},
+                    {"name": "clear", "id": 1, "color": [155, 155, 155]},
+                    {"name": "cloudy", "id": 2, "color": [255, 255, 255]},
+                    {"name": "amber", "id": 3, "color": [245, 166, 35]},
+                ],
+            }
 
+        test_dataset = f"etaylor/{dataset_name}"
+        self._segments_handler.create_dataset(dataset_name, description, task_type, task_attributes)
+        return test_dataset
 
-def upload_predictions(release, model):
-    print(f"release={release}")
-    dataset = SegmentsDataset(release)
+    def _upload_predictions(self, release, model) -> None:
+        dataset = SegmentsDataset(release)
+        for sample in dataset:
+            image = sample["image"]
+            segmentation_bitmap, annotations = model(image)
+            self._segments_handler.upload_annotation(sample["uuid"], segmentation_bitmap, annotations)
 
-    for sample in dataset:
-        # Generate label predictions
-        image = sample["image"]
-        segmentation_bitmap, annotations = model(image)
-        segmentsai_handler.upload_annotation_for_sample(
-            sample["uuid"], segmentation_bitmap, annotations
+    def run(self, image_name: str, week_key: str, zoom_type_key: str, visualize: bool = False) -> None:
+        train_dataset_name = "etaylor/cannabis_patches_all_images"
+
+        if visualize:
+            self._segments_handler.visualize_dataset(train_dataset_name)
+
+        model = self._train_segmentation_model(train_dataset_name)
+
+        test_dataset = self._create_new_test_dataset(
+            image_name, WEEKS_DIR[week_key], ZOOM_TYPES_DIR[zoom_type_key]
         )
+        abs_images_path = f"{Paths.get_processed_cannabis_path(week_key, zoom_type_key)}/{image_name}"
 
+        self._segments_handler.upload_images(test_dataset, abs_images_path)
 
-def model_assist_label_pipeline(
-    image_name: str, week_key: str, zoom_type_key: str, visualize: bool = False
-):
-
-    train_dataset_name = "etaylor/cannabis_patches_all_images"
-
-    if visualize:
-        segmentsai_handler.visualize_dataset(train_dataset_name)
-
-    model = train_segmentation_model(train_dataset_name)
-
-    # Create a new test dataset for the specified image, week, and zoom type
-    test_dataset = create_new_test_dataset(
-        image_name, config.WEEKS_DIR[week_key], config.ZOOM_TYPES_DIR[zoom_type_key]
-    )
-    # Get the absolute path to the processed image
-    abs_images_path = f"{config.get_processed_cannabis_image_path(week_key, zoom_type_key)}/{image_name}"
-
-    # Upload the images that are not annotated to the dataset
-    segmentsai_handler.upload_images(test_dataset, abs_images_path)
-
-    release_name = "v0.1"
-    description = "upload predictions to dataset."
-    segmentsai_handler.client.add_release(test_dataset, release_name, description)
-    test_release = segmentsai_handler.client.get_release(test_dataset, "v0.1")
-    # Create a release and upload predictions to the platform
-    upload_predictions(test_release, model)
+        release_name = "v0.1"
+        self._segments_handler.client.add_release(test_dataset, release_name, "upload predictions to dataset.")
+        test_release = self._segments_handler.client.get_release(test_dataset, "v0.1")
+        self._upload_predictions(test_release, model)
 
 
 if __name__ == "__main__":
-    # TODO: THIS SCRIPT DOES NOT WORK BECAUSE OF A PROBLEM WITH THE RELEASE OF SEGMENTS.AI - to run this code run it from here: src/annotation_handling/notebooks/model_assisted_labeling.ipynb
-    image_name_param = "IMG_2129"
-    week_param = "week9"
-    zoom_type_param = "3xr"
-    model_assist_label_pipeline(
-        image_name_param, week_param, zoom_type_param, visualize=True
-    )
+    pipeline = ModelAssistPipeline()
+    pipeline.run("IMG_2129", "week9", "3xr", visualize=True)

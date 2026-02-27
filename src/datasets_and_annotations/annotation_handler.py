@@ -1,298 +1,201 @@
-import numpy as np
 import os
+import random
 import shutil
+from pathlib import Path
+
+import numpy as np
 from segments.utils import export_dataset
+from ultralytics.data.converter import convert_coco
+
+from src.config.settings import SEGMENTS_FOLDER
 from src.datasets_and_annotations.segmentsai_handler import SegmentsAIHandler
 
-# YOLO utils
-import random
-from pathlib import Path
-from ultralytics.data.converter import convert_coco
-import config
-
-SEGMENTS_HANDLER = SegmentsAIHandler()
+CLASS_NAMES = {0: "trichome", 1: "clear", 2: "cloudy", 3: "amber"}
 
 
-def convert_coco_to_segments_format(image, outputs):
-    segmentation_bitmap = np.zeros((image.shape[0], image.shape[1]), np.uint32)
-    annotations = []
-    counter = 1
-    instances = outputs["instances"]
-    for i in range(len(instances.pred_classes)):
-        category_id = int(instances.pred_classes[i])
-        instance_id = counter
-        mask = instances.pred_masks[i].cpu()
-        segmentation_bitmap[mask] = instance_id
-        annotations.append({"id": instance_id, "category_id": category_id})
-        counter += 1
-    return segmentation_bitmap, annotations
+class AnnotationHandler:
+    def __init__(self) -> None:
+        self._segments_handler = SegmentsAIHandler()
 
+    def convert_coco_to_segments(
+        self, image: np.ndarray, outputs
+    ) -> tuple[np.ndarray, list]:
+        segmentation_bitmap = np.zeros((image.shape[0], image.shape[1]), np.uint32)
+        annotations = []
+        instances = outputs["instances"]
 
-def convert_segments_to_coco_format(
-    dataset_name, release_version, export_format="coco-instance", output_dir="."
-):
-    # get the dataset instance
-    dataset = SEGMENTS_HANDLER.get_dataset_instance(
-        dataset_name, version=release_version
-    )
+        for i in range(len(instances.pred_classes)):
+            instance_id = i + 1
+            category_id = int(instances.pred_classes[i])
+            mask = instances.pred_masks[i].cpu()
+            segmentation_bitmap[mask] = instance_id
+            annotations.append({"id": instance_id, "category_id": category_id})
 
-    # export the dataset - format is coco instance segmentation
-    export_json_path, saved_images_path = export_dataset(
-        dataset, export_format=export_format, export_folder=output_dir
-    )
+        return segmentation_bitmap, annotations
 
-    # Create the annotations folder one level up from saved_images_path
-    annotations_folder = os.path.join(os.path.dirname(saved_images_path), "annotations")
-    if not os.path.exists(annotations_folder):
-        os.makedirs(annotations_folder)
+    def convert_segments_to_coco_format(
+        self,
+        dataset_name: str,
+        release_version: str,
+        export_format: str = "coco-instance",
+        output_dir: str = ".",
+    ) -> tuple:
+        dataset = self._segments_handler.get_dataset_instance(dataset_name, version=release_version)
+        export_json_path, saved_images_path = export_dataset(
+            dataset, export_format=export_format, export_folder=output_dir
+        )
 
-    # Move the export_json_path file to the annotations folder
-    new_export_json_path = os.path.join(
-        annotations_folder, os.path.basename(export_json_path)
-    )
-    shutil.move(export_json_path, new_export_json_path)
+        annotations_folder = os.path.join(os.path.dirname(saved_images_path), "annotations")
+        os.makedirs(annotations_folder, exist_ok=True)
+        new_export_json_path = os.path.join(annotations_folder, os.path.basename(export_json_path))
+        shutil.move(export_json_path, new_export_json_path)
 
-    return dataset, new_export_json_path, saved_images_path
+        return dataset, new_export_json_path, saved_images_path
 
+    @staticmethod
+    def _link_image(src_dir: str, dst_dir: str, img_name: str) -> None:
+        os.symlink(os.path.join(src_dir, img_name), os.path.join(dst_dir, img_name))
 
-# ----- YOLO annotations functions -----
-
-
-def link_images_and_copy_labels(
-    images, source_dir, target_img_dir, label_dir, target_label_dir
-):
-    """Creates symbolic links for image files in the target directory and copies corresponding label files."""
-    for img_name in images:
-        src_img_path = os.path.join(source_dir, img_name)
-        dst_img_path = os.path.join(target_img_dir, img_name)
-        os.symlink(src_img_path, dst_img_path)
-
+    @staticmethod
+    def _copy_label(label_dir: str, dst_label_dir: str, img_name: str) -> None:
         label_name = os.path.splitext(img_name)[0] + ".txt"
-        src_label_path = os.path.join(label_dir, label_name)
-        dst_label_path = os.path.join(target_label_dir, label_name)
-        if os.path.exists(src_label_path):
-            shutil.copy(src_label_path, dst_label_path)
+        src_path = os.path.join(label_dir, label_name)
+        if os.path.exists(src_path):
+            shutil.copy(src_path, os.path.join(dst_label_dir, label_name))
 
+    @staticmethod
+    def _link_images_and_copy_labels(
+        images: list[str],
+        source_dir: str,
+        target_img_dir: str,
+        label_dir: str,
+        target_label_dir: str,
+    ) -> None:
+        for img_name in images:
+            AnnotationHandler._link_image(source_dir, target_img_dir, img_name)
+            AnnotationHandler._copy_label(label_dir, target_label_dir, img_name)
 
-def prepare_train_val_splits(image_dir, label_dir, train_percentage, output_base_dir):
-    """
-    Prepares and organizes image and label data into training and validation sets within specified directories.
+    @staticmethod
+    def _list_images(directory: str) -> list[str]:
+        return [
+            f for f in os.listdir(directory)
+            if os.path.isfile(os.path.join(directory, f)) and f.lower().endswith((".jpg", ".png"))
+        ]
 
-    Parameters:
-    image_dir (str): The directory where the input images are stored.
-    label_dir (str): The directory where the corresponding labels for the images are stored.
-    train_percentage (float): The percentage of the dataset to be used as the training set.
-    output_base_dir (str): The base directory where the training and validation directories will be established.
+    @staticmethod
+    def _split_list(items: list, ratio: float) -> tuple[list, list]:
+        random.shuffle(items)
+        split_idx = int(len(items) * ratio)
+        return items[:split_idx], items[split_idx:]
 
-    Notes:
-    - Each image is assumed to have a corresponding label file with the same name but a '.txt' extension.
-    - Missing label files result in the exclusion of the corresponding images from the split.
-    - The function uses symbolic links for images and copies the label files to avoid duplication.
-    """
-    train_img_dir = os.path.join(output_base_dir, "images/train")
-    val_img_dir = os.path.join(output_base_dir, "images/val")
-    train_label_dir = os.path.join(output_base_dir, "labels/train")
-    val_label_dir = os.path.join(output_base_dir, "labels/val")
+    @staticmethod
+    def prepare_train_val_splits(
+        image_dir: str,
+        label_dir: str,
+        train_percentage: float,
+        output_base_dir: str,
+    ) -> None:
+        train_img_dir = os.path.join(output_base_dir, "images/train")
+        val_img_dir = os.path.join(output_base_dir, "images/val")
+        train_label_dir = os.path.join(output_base_dir, "labels/train")
+        val_label_dir = os.path.join(output_base_dir, "labels/val")
 
-    os.makedirs(train_img_dir, exist_ok=True)
-    os.makedirs(val_img_dir, exist_ok=True)
-    os.makedirs(train_label_dir, exist_ok=True)
-    os.makedirs(val_label_dir, exist_ok=True)
+        for d in [train_img_dir, val_img_dir, train_label_dir, val_label_dir]:
+            os.makedirs(d, exist_ok=True)
 
-    # List all images
-    all_images = [
-        f for f in os.listdir(image_dir) if os.path.isfile(os.path.join(image_dir, f))
-    ]
+        all_images = AnnotationHandler._list_images(image_dir)
+        train_images, val_images = AnnotationHandler._split_list(all_images, train_percentage)
 
-    # Shuffle and split images into train and val sets
-    random.shuffle(all_images)
-    split_idx = int(len(all_images) * train_percentage)
-    train_images = all_images[:split_idx]
-    val_images = all_images[split_idx:]
+        AnnotationHandler._link_images_and_copy_labels(train_images, image_dir, train_img_dir, label_dir, train_label_dir)
+        AnnotationHandler._link_images_and_copy_labels(val_images, image_dir, val_img_dir, label_dir, val_label_dir)
 
-    # Create symlinks and copy annotations for train and val sets
-    link_images_and_copy_labels(
-        train_images, image_dir, train_img_dir, label_dir, train_label_dir
-    )
-    link_images_and_copy_labels(
-        val_images, image_dir, val_img_dir, label_dir, val_label_dir
-    )
+    @staticmethod
+    def setup_yolo_dataset_directory(
+        image_dir: str, label_dir: str, output_base_dir: str
+    ) -> None:
+        img_output_dir = os.path.join(output_base_dir, "images")
+        label_output_dir = os.path.join(output_base_dir, "labels")
+        os.makedirs(img_output_dir, exist_ok=True)
+        os.makedirs(label_output_dir, exist_ok=True)
+        all_images = AnnotationHandler._list_images(image_dir)
+        AnnotationHandler._link_images_and_copy_labels(
+            all_images, image_dir, img_output_dir, label_dir, label_output_dir
+        )
 
+    @staticmethod
+    def create_yaml(dataset_path: str, yaml_path: str, train_dir: str = "images/train", val_dir: str = "images/val") -> None:
+        yaml_content = f"""path: {dataset_path}
+train: {train_dir}
+val: {val_dir}
 
-def setup_yolo_dataset_directory(image_dir, label_dir, output_base_dir):
-    """
-    Processes image and label data by organizing them into specified directories without splitting into train and validation sets.
+names:
+  0: trichome
+  1: clear
+  2: cloudy
+  3: amber
+"""
+        Path(yaml_path).write_text(yaml_content)
 
-    Parameters:
-    image_dir (str): The directory where the input images are stored.
-    label_dir (str): The directory where the corresponding labels for the images are stored.
-    output_base_dir (str): The base directory where the images and labels directories will be created.
+    @staticmethod
+    def convert_coco_to_yolo_single(
+        annotations_folder_name: str,
+        dataset_version: str,
+        saving_yaml_path: str,
+        train_percentage: float = 0.8,
+    ) -> str:
+        annotations_dir = f"{SEGMENTS_FOLDER}/{annotations_folder_name}/annotations"
+        output_dir = f"{annotations_dir}/yolo"
+        image_dir = f"{SEGMENTS_FOLDER}/{annotations_folder_name}/{dataset_version}"
+        label_dir = f"{output_dir}/labels/export_coco-instance_{annotations_folder_name}_{dataset_version}"
+        organized_path = f"{output_dir}_split"
 
-    Note:
-    - The function assumes that each image has a corresponding label file with the same name but a '.txt' extension.
-    - If a label file is missing for an image, it is ignored and not included in the processing.
-    - The function uses symbolic links for images and copies the label files.
-    """
-    img_output_dir = os.path.join(output_base_dir, "images")
-    label_output_dir = os.path.join(output_base_dir, "labels")
+        convert_coco(labels_dir=annotations_dir, save_dir=output_dir, use_segments=True)
+        AnnotationHandler.prepare_train_val_splits(image_dir, label_dir, train_percentage, organized_path)
 
-    os.makedirs(img_output_dir, exist_ok=True)
-    os.makedirs(label_output_dir, exist_ok=True)
+        yaml_file_path = os.path.join(saving_yaml_path, f"{annotations_folder_name}_{dataset_version}_data.yaml")
+        AnnotationHandler.create_yaml(organized_path, yaml_file_path)
 
-    # List all images
-    all_images = [
-        f
-        for f in os.listdir(image_dir)
-        if os.path.isfile(os.path.join(image_dir, f))
-        and (f.endswith(".jpg") or f.endswith(".png"))
-    ]
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
 
-    # Use the function to create symbolic links for images and copy label files
-    link_images_and_copy_labels(
-        all_images, image_dir, img_output_dir, label_dir, label_output_dir
-    )
+        return yaml_file_path
 
+    @staticmethod
+    def convert_coco_to_yolo_train_test(
+        train_folder: str,
+        train_version: str,
+        test_folder: str,
+        test_version: str,
+        saving_yaml_path: str,
+    ) -> str:
+        train_annotations_dir = f"{SEGMENTS_FOLDER}/{train_folder}/annotations"
+        train_image_dir = f"{SEGMENTS_FOLDER}/{train_folder}/{train_version}"
+        train_output_dir = f"{train_annotations_dir}/yolo"
+        train_label_dir = f"{train_output_dir}/labels/export_coco-instance_{train_folder}_{train_version}"
+        train_organized = f"{train_output_dir}_split"
 
-def create_yaml(dataset_path, yaml_path):
-    """
-    Creates a YAML file with dataset paths and class names.
+        test_annotations_dir = f"{SEGMENTS_FOLDER}/{test_folder}/annotations"
+        test_image_dir = f"{SEGMENTS_FOLDER}/{test_folder}/{test_version}"
+        test_output_dir = f"{test_annotations_dir}/yolo"
+        test_label_dir = f"{test_output_dir}/labels/export_coco-instance_{test_folder}_{test_version}"
+        test_organized = f"{test_output_dir}_split"
 
-    Parameters:
-    dataset_path (str): The base path where the organized dataset is located.
-    yaml_path (str): The path (including filename) where the YAML file will be saved.
-    """
+        convert_coco(labels_dir=train_annotations_dir, save_dir=train_output_dir, use_segments=False)
+        convert_coco(labels_dir=test_annotations_dir, save_dir=test_output_dir, use_segments=False)
 
-    yaml_content = f"""
-    path: {dataset_path}
-    train: images/train
-    val: images/val
+        AnnotationHandler.setup_yolo_dataset_directory(train_image_dir, train_label_dir, train_organized)
+        AnnotationHandler.setup_yolo_dataset_directory(test_image_dir, test_label_dir, test_organized)
 
-    names:
-      0: trichome
-      1: clear
-      2: cloudy
-      3: amber
-    """
+        yaml_content = f"""train: {train_organized}/images
+val: {test_organized}/images
 
-    with Path(yaml_path).open("w") as f:
-        f.write(yaml_content)
+names:
+  0: trichome
+  1: clear
+  2: cloudy
+  3: amber
+"""
+        yaml_file_path = os.path.join(saving_yaml_path, f"{train_folder}.yaml")
+        Path(yaml_file_path).write_text(yaml_content)
 
-
-def convert_coco_to_yolo_format_from_single_dataset(
-    annotations_folder_name, dataset_version, saving_yaml_path, train_percentage=0.8
-):
-    """
-    Converts COCO annotations to YOLO format, splits the data into training and validation sets,
-    and creates a YAML file for training configuration.
-
-    :param segments_base_folder: Base folder path for segments.
-    :param annotations_folder_name: Folder name containing COCO annotations.
-    :param images_folder_name: Folder name containing images.
-    :param yaml_path: Path to save the YAML configuration file.
-    :param train_percentage: Percentage of data to use for training (default is 0.8).
-    """
-    # Construct paths
-    annotations_dir = f"{config.SEGMENTS_FOLDER}/{annotations_folder_name}/annotations"
-    output_dir = f"{annotations_dir}/yolo"
-    image_dir = f"{config.SEGMENTS_FOLDER}/{annotations_folder_name}/{dataset_version}"
-    label_dir = f"{output_dir}/labels/export_coco-instance_{annotations_folder_name}_{dataset_version}"
-    organized_dataset_path = f"{output_dir}_split"
-
-    # Convert annotations from COCO to YOLO format
-    convert_coco(
-        labels_dir=annotations_dir,
-        save_dir=output_dir,
-        use_segments=True,
-    )
-
-    # Split data into training and validation sets
-    prepare_train_val_splits(
-        image_dir=image_dir,
-        label_dir=label_dir,
-        train_percentage=train_percentage,
-        output_base_dir=organized_dataset_path,
-    )
-
-    # Create YAML file for YOLO training
-    saving_yaml_file_path = os.path.join(
-        saving_yaml_path, f"{annotations_folder_name}_{dataset_version}_data.yaml"
-    )
-    create_yaml(organized_dataset_path, saving_yaml_file_path)
-
-    # remove old yolo folder because we use only yolo_split folder
-    if os.path.exists(output_dir):
-        shutil.rmtree(output_dir)
-        print(f"The folder {output_dir} has been deleted.")
-    else:
-        print(f"The folder {output_dir} does not exist.")
-
-    return saving_yaml_file_path
-
-
-def convert_coco_to_yolo_format_from_train_test_datasets(
-    train_annotations_folder_name,
-    train_dataset_version,
-    test_annotations_folder_name,
-    test_dataset_version,
-    saving_yaml_path,
-):
-    """
-    Converts COCO annotations to YOLO format for separate training and testing datasets,
-    and creates a YAML file for training configuration.
-    """
-    # Construct train paths
-    train_annotations_dir = (
-        f"{config.SEGMENTS_FOLDER}/{train_annotations_folder_name}/annotations"
-    )
-    train_image_dir = f"{config.SEGMENTS_FOLDER}/{train_annotations_folder_name}/{train_dataset_version}"
-    train_output_dir = f"{train_annotations_dir}/yolo"
-    train_label_dir = f"{train_output_dir}/labels/export_coco-instance_{train_annotations_folder_name}_{train_dataset_version}"
-    train_organized_dataset_path = f"{train_output_dir}_split"
-
-    # Construct test paths
-    test_annotations_dir = (
-        f"{config.SEGMENTS_FOLDER}/{test_annotations_folder_name}/annotations"
-    )
-    test_image_dir = f"{config.SEGMENTS_FOLDER}/{test_annotations_folder_name}/{test_dataset_version}"
-    test_output_dir = f"{test_annotations_dir}/yolo"
-    test_label_dir = f"{test_output_dir}/labels/export_coco-instance_{test_annotations_folder_name}_{test_dataset_version}"
-    test_organized_dataset_path = f"{test_output_dir}_split"
-
-    # Convert annotations from COCO to YOLO format for training dataset
-    convert_coco(
-        labels_dir=train_annotations_dir, save_dir=train_output_dir, use_segments=False
-    )
-
-    # Convert annotations from COCO to YOLO format for testing dataset
-    convert_coco(
-        labels_dir=test_annotations_dir, save_dir=test_output_dir, use_segments=False
-    )
-
-    # Split data into training and validation sets for training dataset
-    setup_yolo_dataset_directory(
-        train_image_dir, train_label_dir, train_organized_dataset_path
-    )
-    setup_yolo_dataset_directory(
-        test_image_dir, test_label_dir, test_organized_dataset_path
-    )
-
-    yaml_content = f"""
-    train: {train_organized_dataset_path}/images
-    val: {test_organized_dataset_path}/images
-
-    names:
-      0: trichome
-      1: clear
-      2: cloudy
-      3: amber
-    """
-
-    yaml_file_path = os.path.join(
-        saving_yaml_path, f"{train_annotations_folder_name}.yaml"
-    )
-    with open(yaml_file_path, "w") as file:
-        file.write(yaml_content)
-
-    print(f"YAML configuration file saved to {yaml_file_path}")
-
-    return yaml_file_path
+        return yaml_file_path

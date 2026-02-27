@@ -1,47 +1,32 @@
-# Specific notebooks and other files to ignore
-/general_notebooks/old/trichomas_Detection_itay744.ipynb
-/general_notebooks/detecting_stigmas.ipynb
-/output/model_final.pth
-/old/tfd_detection/tfd_experiment_notebook.ipynb
-/src/classification/checkpoints/alexnet_trichome_classifier.pkl
-/src/segmentation/notebooks/sam_experiment_notebook.ipynb
-/src/segmentation/notebooks/filtering_SAM_predictions_methods.ipynb
-/src/segmentation/checkpoints/sam_vit_h_4b8939.pth
-/src/data_preparation/notebooks/sharpness_comparison.ipynb
-/src/data_preparation/notebooks/filter_with_sharpness.ipynb
-/src/data_preparation/notebooks/sharpness_comparison_experiment1.ipynb
-/src/preprocessing/images_preprocess_notebook.ipynb
-/src/annotation_handling/fast_labeling_workflow/output/model_final.pth
-/src/pipelines/notebooks/end_to_end_pipeline_parts_experiment.ipynb
-
-# Env variables
-.env
-
-# all . files
-.*
+# IDE and editor folders
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# Checkpoints and images folders
-/checkpoints
-/segments
+# Environment variables
+.env
+.env.*
 
-# Ignore Python compiled files
+# Python
 *.pyc
-segmentsai_handler.cpython-39.pyc
+__pycache__/
+*.egg-info/
+.eggs/
+dist/
+build/
+*.so
 
-# Ignore checkpoint files
+# Checkpoints and model weights
+/checkpoints
 *.pth
 *.pt
 
-# Ignore Python cache directories
-*__pycache__/
+# Segments.ai data
+/segments
 
-
-# Experiement app creds
-trichome-classification-study.json
-/home/etaylor/code_projects/thesis/src/utils/google_drive_sync/creds
-
-# Ignore data files
+# Data folders
 data/
 classification_datasets/
 uriel_images/
@@ -49,36 +34,33 @@ uriel_images/
 # App video tutorial
 exp_tutorial.mp4
 
-# YOLO runs
+# YOLO runs and outputs
 runs/
 yaml_files/
 color_segmentation_runs/
 stigas_segmentation_runs/
 
-# added files
-settings.json
-
-# sahi package images results
+# SAHI results
 sahi_results/
-/home/etaylor/code_projects/thesis/src/segmentation/notebooks/detectron2/sahi_results
 output_results/
 
-# images of the trichome dist classificatoin experiment
-eval_models_on_trichome_dist_images
-
-# Ignore assesing cannabis maturity experiment results
+# Experiment results
 assessing_cannabis_exp_results
 testing_end_to_end_pipe
 results
 evaluation_results
 pistils_pipe_results
+eval_models_on_trichome_dist_images
 
-# credentials folders
-creds
+# Credentials
+creds/
 
-# stigmas images
+# Stigma images
 extracted_stigmas
 
-# document segmentation folders
+# Document segmentation
 document_segmentation
 document_segmentation_old
+
+# Generated CSV files
+src/utils/google_drive_utils/*.csv

@@ -15,7 +15,7 @@ Published in **Agriculture** (MDPI, Q1), Volume 16, Issue 4, 2026
 [Read the full paper](https://www.mdpi.com/2077-0472/16/4/460) | [DOI: 10.3390/agriculture16040460](https://doi.org/10.3390/agriculture16040460)
 
 <p align="center">
-  <img src="readme_images/cannabis flowers.jpg" alt="Cannabis Flower" width="400" height="400">
+  <img src="docs/images/cannabis flowers.jpg" alt="Cannabis Flower" width="400" height="400">
 </p>
 
 ## Table of Contents
@@ -32,8 +32,8 @@ Published in **Agriculture** (MDPI, Q1), Volume 16, Issue 4, 2026
 As cannabis flowers mature, trichomes shift from clear to milky to amber — a key indicator of cannabinoid content. Conventional assessment relies on manual loupe inspection, which is subjective, time-consuming, and inconsistent across observers.
 
 <p align="center">
-  <img src="readme_images/illustration_of_trichomes_and_stigmas.png" alt="Cannabis Flower - Trichomes and Stigmas" width="500">
-  <img src="readme_images/trichome_color.jpeg" alt="Trichome Color Progression" width="400">
+  <img src="docs/images/illustration_of_trichomes_and_stigmas.png" alt="Cannabis Flower - Trichomes and Stigmas" width="500">
+  <img src="docs/images/trichome_color.jpeg" alt="Trichome Color Progression" width="400">
 </p>
 
 <p align="center">
@@ -43,7 +43,7 @@ As cannabis flowers mature, trichomes shift from clear to milky to amber — a k
 We replace manual inspection with smartphone-based macro imaging and computer vision to provide objective, reproducible maturity assessment.
 
 <p align="center">
-  <img src="readme_images/current_vs_our_approach.png" alt="Traditional loupe vs smartphone-based imaging" width="700">
+  <img src="docs/images/current_vs_our_approach.png" alt="Traditional loupe vs smartphone-based imaging" width="700">
 </p>
 
 <p align="center">
@@ -55,17 +55,16 @@ We replace manual inspection with smartphone-based macro imaging and computer vi
 Our framework implements a dual-path pipeline for cannabis maturity assessment:
 
 <p align="center">
-  <img src="readme_images/pipeline_flowchart.png" alt="Pipeline Flowchart" width="800">
+  <img src="docs/images/pipeline_flowchart.png" alt="Pipeline Flowchart" width="800">
 </p>
 
 <p align="center">
-  <img src="readme_images/all_flow_with_labels.png" alt="Complete Pipeline with Example Outputs" width="900">
+  <img src="docs/images/all_flow_with_labels.png" alt="Complete Pipeline with Example Outputs" width="900">
 </p>
 
 <p align="center">
   <em>(Upper path) Trichome detection and classification. (Lower path) Stigma segmentation and color ratio computation. Both paths aggregate results to produce flower-level maturity indicators correlated with HPLC-measured cannabinoid concentrations.</em>
 </p>
-
 
 ## Results
 
@@ -74,9 +73,9 @@ Our framework implements a dual-path pipeline for cannabis maturity assessment:
 Bounding boxes indicate detected trichomes with color-coded classification: blue (clear), orange (milky), and purple (amber).
 
 <p align="center">
-  <img src="readme_images/trichome_det_805_early.png" alt="Trichome Detection - Early Stage (DAF 51)" width="280">
-  <img src="readme_images/trichome_det_805_mid.png" alt="Trichome Detection - Mid Stage (DAF 65)" width="280">
-  <img src="readme_images/trichome_det_805_late.png" alt="Trichome Detection - Late Stage (DAF 79)" width="280">
+  <img src="docs/images/trichome_det_805_early.png" alt="Trichome Detection - Early Stage (DAF 51)" width="280">
+  <img src="docs/images/trichome_det_805_mid.png" alt="Trichome Detection - Mid Stage (DAF 65)" width="280">
+  <img src="docs/images/trichome_det_805_late.png" alt="Trichome Detection - Late Stage (DAF 79)" width="280">
 </p>
 
 <p align="center">
@@ -88,9 +87,9 @@ Bounding boxes indicate detected trichomes with color-coded classification: blue
 Blue overlays indicate detected stigma instances (bounding boxes and segmentation masks).
 
 <p align="center">
-  <img src="readme_images/stigma_seg_805_early.png" alt="Stigma Segmentation - Early Stage" width="280">
-  <img src="readme_images/stigma_seg_805_mid.png" alt="Stigma Segmentation - Mid Stage" width="280">
-  <img src="readme_images/stigma_seg_805_late.png" alt="Stigma Segmentation - Late Stage" width="280">
+  <img src="docs/images/stigma_seg_805_early.png" alt="Stigma Segmentation - Early Stage" width="280">
+  <img src="docs/images/stigma_seg_805_mid.png" alt="Stigma Segmentation - Mid Stage" width="280">
+  <img src="docs/images/stigma_seg_805_late.png" alt="Stigma Segmentation - Late Stage" width="280">
 </p>
 
 <p align="center">
@@ -102,9 +101,9 @@ Blue overlays indicate detected stigma instances (bounding boxes and segmentatio
 Each panel shows the original extracted stigma alongside its classified color map, where green pixels indicate immature tissue and orange pixels indicate mature tissue.
 
 <p align="center">
-  <img src="readme_images/stigma_color_805_early.png" alt="Stigma Color - Early" width="280">
-  <img src="readme_images/stigma_color_805_mid.png" alt="Stigma Color - Mid" width="280">
-  <img src="readme_images/stigma_color_805_late.png" alt="Stigma Color - Late" width="280">
+  <img src="docs/images/stigma_color_805_early.png" alt="Stigma Color - Early" width="280">
+  <img src="docs/images/stigma_color_805_mid.png" alt="Stigma Color - Mid" width="280">
+  <img src="docs/images/stigma_color_805_late.png" alt="Stigma Color - Late" width="280">
 </p>
 
 <p align="center">
@@ -139,8 +138,8 @@ Over 14,000 images collected in partnership with **RCK Science-Based Cannabis Ge
 ## Installation
 
 ```bash
-git clone https://github.com/elorberb/thesis.git
-cd thesis
+git clone https://github.com/elorberb/estimate-cannabis-maturity-with-cv.git
+cd estimate-cannabis-maturity-with-cv
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements/requirements.txt
