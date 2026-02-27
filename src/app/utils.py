@@ -1,6 +1,7 @@
 import base64
+
 import pandas as pd
-import random
+
 
 def get_image_as_base64(path):
     with open(path, "rb") as image_file:

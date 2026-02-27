@@ -1,12 +1,13 @@
-import streamlit as st
-from datetime import datetime
-from streamlit_extras.switch_page_button import switch_page
 import time
+from datetime import datetime
+
 import constants as const
 import db_utils
-import utils
+import streamlit as st
 import streamlit_utils as st_utils
+from streamlit_extras.switch_page_button import switch_page
 
+import utils
 
 st.set_page_config(
     page_title="Experiment",

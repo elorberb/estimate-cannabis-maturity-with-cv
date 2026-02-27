@@ -1,7 +1,8 @@
+import os
 from datetime import datetime
 from pathlib import Path
 
-ROOT_IMAGES_DIR = Path("/sise/home/etaylor/images/")
+ROOT_IMAGES_DIR = Path(os.environ.get("THESIS_IMAGES_DIR", "/sise/home/etaylor/images"))
 RAW_IMAGE_DIR = ROOT_IMAGES_DIR / "raw_images"
 PROCESSED_IMAGE_DIR = ROOT_IMAGES_DIR / "processed_images"
 PROCESSED_CANNABIS_PATCHES_DIR = PROCESSED_IMAGE_DIR / "cannabis_patches"
@@ -35,12 +36,14 @@ ANNOTATIONS_CLASS_MAPPINGS = {
 CANNABIS_PATCH_SIZE = 512
 DATETIME_FORMAT = "%d-%m-%Y_%H-%M-%S"
 
-GOOD_QUALITY_IMAGES_CSV = Path("/home/etaylor/code_projects/thesis/metadata/good_quality_images.csv")
-SEGMENTS_FOLDER = "/home/etaylor/code_projects/thesis/segments"
+_THESIS_DIR = os.environ.get("THESIS_DIR", "/home/etaylor/code_projects/thesis")
 
-ULTRALYTICS_RUNS_DIR = "/home/etaylor/code_projects/thesis/src/segmentation/notebooks/ultralytics/runs"
-ULTRALYTICS_WEIGHTS_DIR = "/home/etaylor/code_projects/thesis/src/segmentation/notebooks/ultralytics/weights"
-ULTRALYTICS_DATASETS_DIR = "/home/etaylor/code_projects/thesis/src/segmentation/notebooks/ultralytics/datasets"
+GOOD_QUALITY_IMAGES_CSV = Path(os.environ.get("THESIS_GOOD_QUALITY_CSV", f"{_THESIS_DIR}/metadata/good_quality_images.csv"))
+SEGMENTS_FOLDER = os.environ.get("THESIS_SEGMENTS_DIR", f"{_THESIS_DIR}/segments")
+
+ULTRALYTICS_RUNS_DIR = os.environ.get("ULTRALYTICS_RUNS_DIR", f"{_THESIS_DIR}/src/segmentation/notebooks/ultralytics/runs")
+ULTRALYTICS_WEIGHTS_DIR = os.environ.get("ULTRALYTICS_WEIGHTS_DIR", f"{_THESIS_DIR}/src/segmentation/notebooks/ultralytics/weights")
+ULTRALYTICS_DATASETS_DIR = os.environ.get("ULTRALYTICS_DATASETS_DIR", f"{_THESIS_DIR}/src/segmentation/notebooks/ultralytics/datasets")
 
 
 class DateUtils:

@@ -15,7 +15,6 @@ from detectron2.utils.logger import setup_logger
 
 from src.segmentation.handlers.detectron2_handler import Detectron2Handler
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("detectron2")
 
 DETECTRON2_MODELS_PATH = "/home/etaylor/code_projects/thesis/checkpoints/detectron2"

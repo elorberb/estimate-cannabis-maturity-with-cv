@@ -1,5 +1,3 @@
-import logging
-
 import cv2
 import numpy as np
 
@@ -8,8 +6,6 @@ from src.config.settings import CANNABIS_PATCH_SIZE
 from src.data_preparation.image_io import ImageIO
 from src.data_preparation.patching import Patching
 from src.data_preparation.sharpness import Sharpness
-
-logging.basicConfig(level=logging.INFO)
 
 
 class PreprocessingPipeline:
