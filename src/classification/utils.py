@@ -1,6 +1,5 @@
-from fastai.vision.all import *
 from fastai.vision import *
-
+from fastai.vision.all import *
 
 CLASSIFICATION_MODELS = {
     "alexnet": models.alexnet,
