@@ -37,7 +37,7 @@ As cannabis flowers mature, trichomes shift from clear to milky to amber — a k
 </p>
 
 <p align="center">
-  <em>(Left) Schematic of a cannabis flower showing stigma and trichome locations. (Right) Trichome color progression: clear → milky → amber.</em>
+  <em>(Top) Schematic of a cannabis flower showing stigma and trichome locations. (Bottom) Trichome color progression: clear → milky → amber.</em>
 </p>
 
 We replace manual inspection with smartphone-based macro imaging and computer vision to provide objective, reproducible maturity assessment.
@@ -47,7 +47,7 @@ We replace manual inspection with smartphone-based macro imaging and computer vi
 </p>
 
 <p align="center">
-  <em>(Top) Traditional loupe vs. smartphone macro imaging in greenhouse. (Bottom) Laboratory imaging setup.</em>
+  <em>(Left) Traditional loupe vs. smartphone macro imaging in greenhouse. (Right) Laboratory imaging setup.</em>
 </p>
 
 ## Methodology
