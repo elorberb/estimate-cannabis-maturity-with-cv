@@ -2,7 +2,7 @@ from segments import SegmentsDataset
 
 from src.config.paths import Paths
 from src.config.settings import WEEKS_DIR, ZOOM_TYPES_DIR
-from src.datasets_and_annotations.segmentsai_handler import SegmentsAIHandler
+from src.annotations.segmentsai_handler import SegmentsAIHandler
 
 
 class ModelAssistPipeline:

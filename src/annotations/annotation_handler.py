@@ -8,7 +8,7 @@ from segments.utils import export_dataset
 from ultralytics.data.converter import convert_coco
 
 from src.config.settings import SEGMENTS_FOLDER
-from src.datasets_and_annotations.segmentsai_handler import SegmentsAIHandler
+from src.annotations.segmentsai_handler import SegmentsAIHandler
 
 CLASS_NAMES = {0: "trichome", 1: "clear", 2: "cloudy", 3: "amber"}
 

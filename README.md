@@ -126,7 +126,7 @@ src/
 │   └── end_to_end/                # Full trichome & stigma analysis pipelines
 ├── data_preparation/              # Image I/O, patching, sharpness filtering
 ├── data_analysis/                 # Cannabis maturity correlation experiments
-├── datasets_and_annotations/      # Annotation handling & Segments.ai integration
+├── annotations/                   # Annotation handling & Segments.ai integration
 ├── app/                           # Streamlit web application
 └── utils/                         # Additional utilities
 ```

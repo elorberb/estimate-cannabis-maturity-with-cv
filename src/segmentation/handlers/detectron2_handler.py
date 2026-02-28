@@ -14,7 +14,7 @@ from detectron2.utils.visualizer import ColorMode, Visualizer
 from matplotlib import pyplot as plt
 from skimage.measure import label, regionprops
 
-from src.datasets_and_annotations.annotation_handler import AnnotationHandler
+from src.annotations.annotation_handler import AnnotationHandler
 
 DETECTRON2_CHECKPOINT_BASE_PATH = "checkpoints/detectron2"
 
