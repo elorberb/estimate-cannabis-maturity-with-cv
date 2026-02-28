@@ -121,7 +121,7 @@ src/
 │   ├── handlers/                  # Detectron2, SAM, Ultralytics wrappers
 │   ├── evaluation/                # Model evaluation (per-framework evaluators)
 │   └── train_scripts/             # Training & tuning scripts
-├── stigmas_detection/             # Stigma segmentation + color analysis
+├── stigmas_segmentation/          # Stigma segmentation + color analysis
 ├── pipelines/                     # End-to-end processing pipelines
 │   └── end_to_end/                # Full trichome & stigma analysis pipelines
 ├── data_preparation/              # Image I/O, patching, sharpness filtering

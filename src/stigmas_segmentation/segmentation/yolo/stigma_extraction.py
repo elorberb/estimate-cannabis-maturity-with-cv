@@ -55,7 +55,7 @@ if __name__ == "__main__":
     _image_path = "/sise/shanigu-group/etaylor/assessing_cannabis_exp/experiment_2/images/day_1_2024_12_05/lab/6/IMG_0626.JPG"
     _image_name = os.path.basename(_image_path).split(".")[0]
     _save_dir = os.path.join(
-        "/home/etaylor/code_projects/thesis/src/stigmas_detection/segmentation/yolo/extracted_stigmas",
+        "/home/etaylor/code_projects/thesis/src/stigmas_segmentation/segmentation/yolo/extracted_stigmas",
         _image_name,
     )
 
