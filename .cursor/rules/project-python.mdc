@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Follow **AGENTS.md** at the repository root for Python style (imports, types, private members, exceptions, no docstrings), commands (`ruff check .`, `ruff format`, `pytest`, `uv sync`), and testing/linting requirements. Treat AGENTS.md as the single source of truth; do not duplicate it here.

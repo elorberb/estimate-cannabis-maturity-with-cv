@@ -1,0 +1,30 @@
+---
+description: Use when implementing any feature or bugfix, before writing implementation code
+alwaysApply: false
+---
+
+# Test-Driven Development (TDD)
+
+**Core principle:** If you didn't watch the test fail, you don't know if it tests the right thing.
+
+## The Iron Law
+
+NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST. Write code before the test? Delete it. Start over. No exceptions.
+
+## Red-Green-Refactor
+
+1. **RED:** Write one minimal failing test. Run it; confirm it fails for the right reason (feature missing, not typo).
+2. **GREEN:** Write the simplest code to pass. Run tests; confirm pass. No extra features.
+3. **REFACTOR:** Clean up; keep tests green. Then repeat with the next test.
+
+## Requirements
+
+- One behavior per test; clear name; real code (mocks only if unavoidable).
+- Always run the test to see it fail before implementing.
+- Minimal code to pass; no "while I'm here" improvements.
+
+## Red Flags — STOP and Start Over
+
+Code before test; test after implementation; test passes immediately; rationalizing "just this once"; "Keep as reference" or "adapt existing code".
+
+**Production code → test exists and failed first. Otherwise → not TDD.**
