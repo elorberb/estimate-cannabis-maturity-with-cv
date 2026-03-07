@@ -12,6 +12,7 @@
 # Python
 *.pyc
 __pycache__/
+.ruff_cache/
 *.egg-info/
 .eggs/
 dist/
