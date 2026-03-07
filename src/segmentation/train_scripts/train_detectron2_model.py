@@ -13,11 +13,12 @@ from detectron2.engine import DefaultPredictor, DefaultTrainer
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset
 from detectron2.utils.logger import setup_logger
 
+from src.config.settings import PROJECT_ROOT
 from src.segmentation.handlers.detectron2_handler import Detectron2Handler
 
 logger = logging.getLogger("detectron2")
 
-DETECTRON2_MODELS_PATH = "/home/etaylor/code_projects/thesis/checkpoints/detectron2"
+DETECTRON2_MODELS_PATH = str(PROJECT_ROOT / "checkpoints/detectron2")
 DATASET_NAME_TRAIN = "etaylor/cannabis_patches_train_26-04-2024_15-44-44"
 DATASET_NAME_TEST = "etaylor/cannabis_patches_test_26-04-2024_15-44-44"
 RELEASE = "v0.1"

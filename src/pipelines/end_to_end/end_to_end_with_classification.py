@@ -10,6 +10,7 @@ from ultralytics import YOLO
 
 from src.common.detection import Detection
 from src.common.logging import Logging
+from src.config.settings import PROJECT_ROOT
 from src.pipelines.end_to_end.end_to_end_utils import EndToEndUtils
 
 logger = Logging.get_logger(__name__)
@@ -233,15 +234,15 @@ class ClassificationPipeline:
 if __name__ == "__main__":
     detection_model_config = {
         "model_name": "faster_rcnn_R_50_C4_1x",
-        "checkpoint": "/home/etaylor/code_projects/thesis/checkpoints/trichomes_detection/detectron2/COCO-Detection/faster_rcnn_R_50_C4_1x/29-04-2024_16-09-41/model_final.pth",
-        "yaml_file": "/home/etaylor/code_projects/thesis/checkpoints/trichomes_detection/detectron2/COCO-Detection/faster_rcnn_R_50_C4_1x/29-04-2024_16-09-41/config.yaml",
+        "checkpoint": str(PROJECT_ROOT / "checkpoints/trichomes_detection/detectron2/COCO-Detection/faster_rcnn_R_50_C4_1x/29-04-2024_16-09-41/model_final.pth"),
+        "yaml_file": str(PROJECT_ROOT / "checkpoints/trichomes_detection/detectron2/COCO-Detection/faster_rcnn_R_50_C4_1x/29-04-2024_16-09-41/config.yaml"),
     }
     classification_models_config = {
         "trichome_classification": {
-            "checkpoint": "/home/etaylor/code_projects/thesis/checkpoints/trichome_image_classification/yolo/fine_tuned/YOLOv8/Medium_dataset_0.pt"
+            "checkpoint": str(PROJECT_ROOT / "checkpoints/trichome_image_classification/yolo/fine_tuned/YOLOv8/Medium_dataset_0.pt")
         },
         "blur_classification": {
-            "checkpoint": "/home/etaylor/code_projects/thesis/checkpoints/blur_image_classification/yolo/fine_tuned/YOLOv8/Nano_dataset_0.pt"
+            "checkpoint": str(PROJECT_ROOT / "checkpoints/blur_image_classification/yolo/fine_tuned/YOLOv8/Nano_dataset_0.pt")
         },
     }
 

@@ -6,6 +6,7 @@ import torch
 from ultralytics import RTDETR, YOLO, settings
 
 from src.config.settings import (
+    PROJECT_ROOT,
     ULTRALYTICS_DATASETS_DIR,
     ULTRALYTICS_RUNS_DIR,
     ULTRALYTICS_WEIGHTS_DIR,
@@ -13,7 +14,7 @@ from src.config.settings import (
 
 logger = logging.getLogger(__name__)
 
-ULTRALYTICS_CHECKPOINT_PATHS = "/home/etaylor/code_projects/thesis/checkpoints/ultralytics"
+ULTRALYTICS_CHECKPOINT_PATHS = str(PROJECT_ROOT / "checkpoints/ultralytics")
 
 
 class UltralyticsTuner:

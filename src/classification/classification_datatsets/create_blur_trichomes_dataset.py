@@ -5,6 +5,8 @@ import shutil
 import cv2
 import numpy as np
 
+from src.config.settings import PROJECT_ROOT
+
 
 class BlurDatasetCreator:
     @staticmethod
@@ -68,8 +70,8 @@ class BlurDatasetCreator:
 
 
 if __name__ == "__main__":
-    _good_quality_path = "/home/etaylor/code_projects/thesis/classification_datasets/trichome_classification/good_quality"
-    _output_base = "/home/etaylor/code_projects/thesis/classification_datasets/output_dataset"
+    _good_quality_path = str(PROJECT_ROOT / "classification_datasets/trichome_classification/good_quality")
+    _output_base = str(PROJECT_ROOT / "classification_datasets/output_dataset")
 
     BlurDatasetCreator.create_blur_vs_quality(
         _good_quality_path, _output_base, ["gaussian", "motion", "median"]

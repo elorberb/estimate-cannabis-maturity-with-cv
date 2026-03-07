@@ -1,5 +1,7 @@
 from ultralytics.data.converter import convert_coco
 
+from src.config.settings import PROJECT_ROOT
+
 
 class CocoToYoloConverter:
     @staticmethod
@@ -9,6 +11,6 @@ class CocoToYoloConverter:
 
 if __name__ == "__main__":
     CocoToYoloConverter.convert(
-        labels_dir="/home/etaylor/code_projects/thesis/segments/etaylor_stigmas_dataset/annotations",
-        save_dir="/home/etaylor/code_projects/thesis/segments/etaylor_stigmas_dataset/yolo",
+        labels_dir=str(PROJECT_ROOT / "segments/etaylor_stigmas_dataset/annotations"),
+        save_dir=str(PROJECT_ROOT / "segments/etaylor_stigmas_dataset/yolo"),
     )

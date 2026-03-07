@@ -5,6 +5,7 @@ import cv2
 from src.common.detection import Detection
 from src.common.logging import Logging
 from src.common.visualization import Visualization
+from src.config.settings import PROJECT_ROOT
 from src.pipelines.end_to_end.end_to_end_utils import EndToEndUtils
 
 logger = Logging.get_logger(__name__)
@@ -77,10 +78,10 @@ class TrichomesExtractor:
 if __name__ == "__main__":
     _detection_model_config = {
         "model_name": "faster_rcnn_R_50_C4_1x",
-        "checkpoint": "/home/etaylor/code_projects/thesis/checkpoints/detectron2/COCO-Detection/faster_rcnn_R_50_C4_1x/29-04-2024_16-09-41/model_final.pth",
-        "yaml_file": "/home/etaylor/code_projects/thesis/checkpoints/detectron2/COCO-Detection/faster_rcnn_R_50_C4_1x/29-04-2024_16-09-41/config.yaml",
+        "checkpoint": str(PROJECT_ROOT / "checkpoints/detectron2/COCO-Detection/faster_rcnn_R_50_C4_1x/29-04-2024_16-09-41/model_final.pth"),
+        "yaml_file": str(PROJECT_ROOT / "checkpoints/detectron2/COCO-Detection/faster_rcnn_R_50_C4_1x/29-04-2024_16-09-41/config.yaml"),
     }
-    _save_results_path = "/home/etaylor/code_projects/thesis/classification_datasets/trichome_classification/extracted_trichomes_images/images_datasets"
+    _save_results_path = str(PROJECT_ROOT / "classification_datasets/trichome_classification/extracted_trichomes_images/images_datasets")
     _image_path = "/sise/shanigu-group/etaylor/assessing_cannabis_exp/experiment_1/images/day_4_2024_06_10/greenhouse/100/IMG_6182.JPG"
 
     TrichomesExtractor.run(_image_path, _detection_model_config, _save_results_path)

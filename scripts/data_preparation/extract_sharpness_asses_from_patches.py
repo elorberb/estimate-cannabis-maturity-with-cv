@@ -3,6 +3,7 @@ import os
 
 import cv2
 
+from src.config.settings import PROJECT_ROOT
 from src.data_preparation.sharpness import Sharpness
 
 
@@ -23,6 +24,6 @@ class SharpnessExtractor:
 
 if __name__ == "__main__":
     SharpnessExtractor.calculate_and_save(
-        images_dir="/home/etaylor/images/processed_images/cannabis_patches",
-        save_path="/home/etaylor/code_projects/thesis/data/metadata/sharpness_per_patch_scores.json",
+        images_dir=str(PROJECT_ROOT / "images/processed_images/cannabis_patches"),
+        save_path=str(PROJECT_ROOT / "data/metadata/sharpness_per_patch_scores.json"),
     )

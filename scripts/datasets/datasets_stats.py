@@ -1,5 +1,7 @@
 import os
 
+from src.config.settings import PROJECT_ROOT
+
 
 class DatasetStats:
     @staticmethod
@@ -40,7 +42,7 @@ if __name__ == "__main__":
     print(f"Total number of JPG images in experiment 2: {DatasetStats.count_jpg_images(_base_folder)}")
 
     DatasetStats.count_images_in_each_subfolder(
-        "/home/etaylor/code_projects/thesis/classification_datasets/trichome_classification/good_quality"
+        str(PROJECT_ROOT / "classification_datasets/trichome_classification/good_quality")
     )
 
     _folder_path = "/sise/shanigu-group/etaylor/assessing_cannabis_exp/experiment_1/images/stigmas_images_flat"

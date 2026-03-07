@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ultralytics import YOLO
 
+from src.config.settings import PROJECT_ROOT
+
 
 class PistilsAnalysisPipeline:
     @staticmethod
@@ -208,7 +210,7 @@ class PistilsAnalysisPipeline:
 
 if __name__ == "__main__":
     PistilsAnalysisPipeline.run_pipeline(
-        image_path="/home/etaylor/code_projects/thesis/segments/etaylor_stigmas_dataset/yolo_formatted/images/val/day_4_IMG_5942.jpg",
-        pistils_model_checkpoint="/home/etaylor/code_projects/thesis/checkpoints/stigmas_segmentation/yolo/fine_tuned/yolov8s_seg_fine_tuned.pt",
-        color_model_checkpoint="/home/etaylor/code_projects/thesis/checkpoints/stigmas_color_segmentation/yolo/fine_tuned/yolov8n-seg_fine_tuned.pt",
+        image_path=str(PROJECT_ROOT / "segments/etaylor_stigmas_dataset/yolo_formatted/images/val/day_4_IMG_5942.jpg"),
+        pistils_model_checkpoint=str(PROJECT_ROOT / "checkpoints/stigmas_segmentation/yolo/fine_tuned/yolov8s_seg_fine_tuned.pt"),
+        color_model_checkpoint=str(PROJECT_ROOT / "checkpoints/stigmas_color_segmentation/yolo/fine_tuned/yolov8n-seg_fine_tuned.pt"),
     )
