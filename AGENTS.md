@@ -1,6 +1,6 @@
 # Python Development Guide
 
-Python coding guidelines for this repo (Google Python Style Guide–based). Full examples: [docs/python-style-guide.md](docs/python-style-guide.md).
+Python coding guidelines for this repo (Google Python Style Guide–based). Full examples: [app/docs/python-style-guide.md](app/docs/python-style-guide.md).
 
 ## Rules
 
