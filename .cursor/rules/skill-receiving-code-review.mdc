@@ -1,0 +1,35 @@
+---
+description: Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation
+alwaysApply: false
+---
+
+# Code Review Reception
+
+**Core principle:** Verify before implementing. Ask before assuming. Technical correctness over social comfort.
+
+## The Response Pattern
+
+1. READ: Complete feedback without reacting
+2. UNDERSTAND: Restate requirement in own words (or ask)
+3. VERIFY: Check against codebase reality
+4. EVALUATE: Technically sound for THIS codebase?
+5. RESPOND: Technical acknowledgment or reasoned pushback
+6. IMPLEMENT: One item at a time, test each
+
+## Forbidden Responses
+
+**NEVER:** "You're absolutely right!", "Great point!", "Let me implement that now" (before verification). **INSTEAD:** Restate the technical requirement; ask clarifying questions; push back with technical reasoning if wrong; just start working.
+
+## Handling Unclear Feedback
+
+If any item is unclear: STOP — do not implement yet. Ask for clarification on unclear items first.
+
+## When To Push Back
+
+Push back when: suggestion breaks existing functionality; reviewer lacks full context; violates YAGNI; technically incorrect; conflicts with architectural decisions. Use technical reasoning, not defensiveness.
+
+## Acknowledging Correct Feedback
+
+When feedback IS correct: state the fix ("Fixed. [what changed]" or "Good catch — [issue]. Fixed in [location]."). Do not use gratitude expressions ("Thanks", "You're right!"); actions speak.
+
+**External feedback = suggestions to evaluate, not orders to follow.** Verify. Question. Then implement.

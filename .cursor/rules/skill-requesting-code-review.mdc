@@ -1,0 +1,38 @@
+---
+description: Use when completing tasks, implementing major features, or before merging to verify work meets requirements
+alwaysApply: false
+---
+
+# Requesting Code Review
+
+Dispatch code-reviewer to catch issues before they cascade.
+
+**Core principle:** Review early, review often.
+
+## When to Request Review
+
+**Mandatory:**
+- After each task in subagent-driven development
+- After completing major feature
+- Before merge to main
+
+**Optional but valuable:**
+- When stuck (fresh perspective)
+- Before refactoring (baseline check)
+- After fixing complex bug
+
+## How to Request
+
+1. Get git SHAs (e.g. BASE_SHA, HEAD_SHA).
+2. Dispatch code-reviewer with WHAT_WAS_IMPLEMENTED, PLAN_OR_REQUIREMENTS, BASE_SHA, HEAD_SHA, DESCRIPTION.
+3. Act on feedback: fix Critical/Important issues; note Minor for later; push back with reasoning if reviewer is wrong.
+
+## Red Flags
+
+**Never:**
+- Skip review because "it's simple"
+- Ignore Critical issues
+- Proceed with unfixed Important issues
+- Argue with valid technical feedback
+
+**If reviewer wrong:** Push back with technical reasoning; show code/tests; request clarification.
