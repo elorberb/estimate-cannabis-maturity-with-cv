@@ -2,6 +2,8 @@ import os
 import random
 import shutil
 
+from src.config.settings import PROJECT_ROOT
+
 
 class BalancedDatasetCreator:
     @staticmethod
@@ -225,8 +227,8 @@ class BalancedDatasetCreator:
 
 
 if __name__ == "__main__":
-    _dataset_path = "/home/etaylor/code_projects/thesis/classification_datasets/trichome_classification/good_quality"
-    _balanced_datasets_folder = "/home/etaylor/code_projects/thesis/classification_datasets/trichome_classification/balanced_datasets"
+    _dataset_path = str(PROJECT_ROOT / "classification_datasets/trichome_classification/good_quality")
+    _balanced_datasets_folder = str(PROJECT_ROOT / "classification_datasets/trichome_classification/balanced_datasets")
 
     for run in range(1, 6):
         BalancedDatasetCreator.create_train_test_split_by_ratio(

@@ -13,9 +13,10 @@ from fastai.vision.all import (
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 
 from src.classification.utils import CLASSIFICATION_MODELS
+from src.config.settings import PROJECT_ROOT
 
-TRAIN_DATASET_PATH = "/home/etaylor/code_projects/thesis/segments/etaylor_cannabis_patches_train_26-04-2024_15-44-44/trichome_dataset"
-TEST_DATASET_PATH = "/home/etaylor/code_projects/thesis/segments/etaylor_cannabis_patches_test_26-04-2024_15-44-44/trichome_dataset"
+TRAIN_DATASET_PATH = str(PROJECT_ROOT / "segments/etaylor_cannabis_patches_train_26-04-2024_15-44-44/trichome_dataset")
+TEST_DATASET_PATH = str(PROJECT_ROOT / "segments/etaylor_cannabis_patches_test_26-04-2024_15-44-44/trichome_dataset")
 
 
 class FastaiTrainer:
@@ -71,7 +72,7 @@ if __name__ == "__main__":
     if _args.model_name not in CLASSIFICATION_MODELS:
         raise ValueError(f"Model name must be one of {list(CLASSIFICATION_MODELS.keys())}")
 
-    _output_path = f"/home/etaylor/code_projects/thesis/src/classification/fastai/models_scores/{_args.model_name}_results.json"
+    _output_path = str(PROJECT_ROOT / "src/classification/fastai/models_scores" / f"{_args.model_name}_results.json")
     FastaiTrainer.train_and_evaluate(
         _args.model_name,
         CLASSIFICATION_MODELS[_args.model_name],

@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ultralytics import YOLO
 
+from src.config.settings import PROJECT_ROOT
+
 GREEN_DATA: list[tuple[int, int, int]] = [
     (214, 217, 162),
     (202, 207, 149),
@@ -312,7 +314,7 @@ if __name__ == "__main__":
     _args = parser.parse_args()
 
     _model = PistilsPipeline.load_model(
-        "/home/etaylor/code_projects/thesis/checkpoints/stigmas_segmentation/yolo/fine_tuned/yolov8s_seg_fine_tuned.pt"
+        str(PROJECT_ROOT / "checkpoints/stigmas_segmentation/yolo/fine_tuned/yolov8s_seg_fine_tuned.pt")
     )
     PistilsPipeline.process_all_folders(
         _args.parent_input_folder, _model, GREEN_DATA, ORANGE_DATA, _args.output_base_folder, save_images=True

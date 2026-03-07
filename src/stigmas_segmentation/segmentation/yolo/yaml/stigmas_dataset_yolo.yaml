@@ -1,4 +1,4 @@
-path: /home/etaylor/code_projects/thesis/segments/etaylor_stigmas_dataset/yolo_formatted  # Root directory
+path: segments/etaylor_stigmas_dataset/yolo_formatted  # Root directory (relative to project root)
 train: images/train  # Path to training images
 val: images/val  # Path to validation images
 

@@ -4,6 +4,8 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
+from src.config.settings import PROJECT_ROOT
+
 
 class StigmaExtraction:
     @staticmethod
@@ -54,14 +56,11 @@ class StigmaExtraction:
 if __name__ == "__main__":
     _image_path = "/sise/shanigu-group/etaylor/assessing_cannabis_exp/experiment_2/images/day_1_2024_12_05/lab/6/IMG_0626.JPG"
     _image_name = os.path.basename(_image_path).split(".")[0]
-    _save_dir = os.path.join(
-        "/home/etaylor/code_projects/thesis/src/stigmas_segmentation/segmentation/yolo/extracted_stigmas",
-        _image_name,
-    )
+    _save_dir = str(PROJECT_ROOT / "src/stigmas_segmentation/segmentation/yolo/extracted_stigmas" / _image_name)
 
     _segmented_objects = StigmaExtraction.run_inference(
         _image_path,
-        "/home/etaylor/code_projects/thesis/checkpoints/stigmas_segmentation/yolo/fine_tuned/yolov8m-seg_fine_tuned.pt",
+        str(PROJECT_ROOT / "checkpoints/stigmas_segmentation/yolo/fine_tuned/yolov8m-seg_fine_tuned.pt"),
         _save_dir,
     )
     print(f"Saved {len(_segmented_objects)} stigmas objects to: {_save_dir}")

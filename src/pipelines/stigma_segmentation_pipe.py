@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ultralytics import YOLO
 
+from src.config.settings import PROJECT_ROOT
+
 
 class StigmaSegmentationPipeline:
     @staticmethod
@@ -143,7 +145,7 @@ class StigmaSegmentationPipeline:
 
 if __name__ == "__main__":
     _model = YOLO(
-        "/home/etaylor/code_projects/thesis/checkpoints/stigmas_segmentation/yolo/fine_tuned/yolov8m-seg_fine_tuned.pt"
+        str(PROJECT_ROOT / "checkpoints/stigmas_segmentation/yolo/fine_tuned/yolov8m-seg_fine_tuned.pt")
     )
     StigmaSegmentationPipeline.process_all_folders(
         "/sise/shanigu-group/etaylor/assessing_cannabis_exp/experiment_1/images/day_1_2024_05_30/greenhouse",

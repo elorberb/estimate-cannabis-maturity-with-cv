@@ -1,6 +1,7 @@
 import os
 
 from src.common.logging import Logging
+from src.config.settings import PROJECT_ROOT
 from src.pipelines.end_to_end.end_to_end_utils import EndToEndUtils
 from src.pipelines.end_to_end.end_to_end_with_classification import ClassificationPipeline
 
@@ -8,16 +9,16 @@ logger = Logging.get_logger(__name__)
 
 DETECTION_MODEL_CONFIG = {
     "model_name": "faster_rcnn_R_50_C4_1x",
-    "checkpoint": "/home/etaylor/code_projects/thesis/checkpoints/trichomes_detection/detectron2/COCO-Detection/faster_rcnn_R_50_C4_1x/29-04-2024_16-09-41/model_final.pth",
-    "yaml_file": "/home/etaylor/code_projects/thesis/checkpoints/trichomes_detection/detectron2/COCO-Detection/faster_rcnn_R_50_C4_1x/29-04-2024_16-09-41/config.yaml",
+    "checkpoint": str(PROJECT_ROOT / "checkpoints/trichomes_detection/detectron2/COCO-Detection/faster_rcnn_R_50_C4_1x/29-04-2024_16-09-41/model_final.pth"),
+    "yaml_file": str(PROJECT_ROOT / "checkpoints/trichomes_detection/detectron2/COCO-Detection/faster_rcnn_R_50_C4_1x/29-04-2024_16-09-41/config.yaml"),
 }
 
 CLASSIFICATION_MODELS_CONFIG = {
     "trichome_classification": {
-        "checkpoint": "/home/etaylor/code_projects/thesis/checkpoints/trichome_image_classification/yolo/fine_tuned/YOLOv8/Medium_dataset_0.pt"
+        "checkpoint": str(PROJECT_ROOT / "checkpoints/trichome_image_classification/yolo/fine_tuned/YOLOv8/Medium_dataset_0.pt")
     },
     "blur_classification": {
-        "checkpoint": "/home/etaylor/code_projects/thesis/checkpoints/blur_image_classification/yolo/fine_tuned/YOLOv8/Nano_dataset_0.pt"
+        "checkpoint": str(PROJECT_ROOT / "checkpoints/blur_image_classification/yolo/fine_tuned/YOLOv8/Nano_dataset_0.pt")
     },
 }
 
@@ -26,7 +27,7 @@ MODEL_TYPE = "yolo"
 PERFORM_BLUR_CLASSIFICATION = False
 
 IMAGE_PATH = "/sise/shanigu-group/etaylor/assessing_cannabis_exp/experiment_1/images/day_3_2024_06_06/greenhouse/81/IMG_5296.JPG"
-OUTPUT_DIR = "/home/etaylor/code_projects/thesis/src/pipelines/output_results"
+OUTPUT_DIR = str(PROJECT_ROOT / "src/pipelines/output_results")
 
 
 class SingleImageAnalysisPipeline:
