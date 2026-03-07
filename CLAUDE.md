@@ -5,7 +5,7 @@ This repo implements cannabis flower maturity assessment using computer vision (
 ## For AI Agents
 
 - **Code style and conventions:** Follow **AGENTS.md** at the repo root. It defines Python standards (imports, types, private members, testing, linting, etc.). All Python code in this repo must comply.
-- **Architecture and roadmap:** See **docs/plans/** for the app design and phased roadmap (MVP → auth → multi-plant).
+- **Architecture and roadmap:** See **app/docs/plans/** for the app design and phased roadmap (MVP → auth → multi-plant).
 
 ## Quick Reference
 
