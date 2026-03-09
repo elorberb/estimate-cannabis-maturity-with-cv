@@ -7,4 +7,5 @@ This file records work done by `giliweiss` on Phase 1 issues in `elorberb/estima
 - Created Git branch `giliweiss-issues-setup` from `master` for personal issue work.
 - Added `giliweiss-issues-order.md` with a recommended working order for all open issues assigned to `giliweiss`.
 - Added `giliweiss-work-log.md` as a running log of completed work.
+- Implemented initial Expo managed project scaffold under `app/mobile` (package.json, app.json, tsconfig, Babel config, basic home screen) for issue [A3] Expo project scaffold.
 
