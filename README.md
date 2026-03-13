@@ -140,10 +140,10 @@ Over 14,000 images collected in partnership with **RCK Science-Based Cannabis Ge
 ```bash
 git clone https://github.com/elorberb/estimate-cannabis-maturity-with-cv.git
 cd estimate-cannabis-maturity-with-cv
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements/requirements.txt
+make setup
 ```
+
+`make setup` runs `uv sync` and configures git hooks (branch name enforcement). See `Makefile` for other targets (`lint`, `format`, `test`).
 
 ## Citation
 

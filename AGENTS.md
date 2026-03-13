@@ -87,3 +87,25 @@ def process(items: list[str] | None = None) -> list[str]:
 ```
 
 **Tests**: functions only (no test classes), pytest + `unittest.mock`, descriptive names, mirror source layout in `tests/`.
+
+## Branch, commit, and PR naming
+
+Three streams: `infra` (setup/CI), `back` (Modal GPU + API), `front` (mobile + integration).
+
+The issue number is the GitHub issue number (auto-assigned on creation — no manual tracking needed).
+
+| Artifact | Format | Example |
+|---|---|---|
+| Issue title | `<stream>-<github#>: <description>` | `back-28: API schemas` |
+| Branch | `<stream>-<github#>-<short-slug>` | `back-28-api-schemas` |
+| Commit | `<stream>-<github#>: <message>` | `back-28: add Pydantic request/response models` |
+| PR title | `<stream>-<github#>: <description>` | `back-28: API schemas` |
+
+**Workflow for a new issue:**
+1. Create the issue on GitHub → note the auto-assigned number (e.g. #52)
+2. Edit the title to `stream-52: description`
+3. Create branch `stream-52-short-slug`
+
+For changes not tied to an issue, plain kebab-case is fine: branch `organize-docs`, commit `organize-docs: move AI readmes`.
+
+**Branch names are enforced** (CI blocks bad names for everyone + local pre-push hook via `make setup`). Commit messages and PR titles are convention only.
