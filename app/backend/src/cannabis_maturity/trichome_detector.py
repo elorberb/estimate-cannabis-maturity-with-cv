@@ -47,24 +47,20 @@ class TrichomeDetector:
         self,
         detection_model_path: str,
         classification_model: Any,
-        use_sliced_inference: bool = True,
         patch_size: int = 512,
         overlap: float = 0.2,
     ) -> None:
         self._detection_model = YOLO(detection_model_path)
         self._classification_model = classification_model
-        self._use_sliced_inference = use_sliced_inference
         self._patch_size = patch_size
         self._overlap = overlap
 
     def detect(self, image_bgr: np.ndarray) -> TrichomeResult:
-        boxes = self._get_boxes_sliced(image_bgr) if self._use_sliced_inference else self._get_boxes_full(image_bgr)
         h, w = image_bgr.shape[:2]
-
         detections: list[Detection] = []
         distribution: dict[TrichomeType, int] = {t: 0 for t in TrichomeType}
 
-        for x_min, y_min, x_max, y_max in boxes:
+        for x_min, y_min, x_max, y_max in self._get_boxes(image_bgr):
             bw, bh = x_max - x_min, y_max - y_min
             cx0 = max(0, int(x_min - bw * self._BBOX_MARGIN))
             cy0 = max(0, int(y_min - bh * self._BBOX_MARGIN))
@@ -85,11 +81,7 @@ class TrichomeDetector:
 
         return TrichomeResult(detections=detections, distribution=distribution, total_count=len(detections))
 
-    def _get_boxes_full(self, image_bgr: np.ndarray) -> list[tuple[float, float, float, float]]:
-        results = self._detection_model.predict(source=image_bgr, conf=self._DETECTION_CONF, verbose=False)
-        return [tuple(map(float, box)) for box in results[0].boxes.xyxy.cpu().numpy()]
-
-    def _get_boxes_sliced(self, image_bgr: np.ndarray) -> list[tuple[float, float, float, float]]:
+    def _get_boxes(self, image_bgr: np.ndarray) -> list[tuple[float, float, float, float]]:
         image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
         slice_result = slice_image(
             PILImage.fromarray(image_rgb),

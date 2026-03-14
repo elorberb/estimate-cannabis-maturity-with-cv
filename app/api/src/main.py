@@ -24,7 +24,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             detection_model_path=settings.detection_model_path,
             classification_model_path=settings.classification_model_path,
             segmentation_model_path=settings.segmentation_model_path,
-            use_sliced_inference=settings.use_sliced_inference,
             trichome_patch_size=settings.trichome_patch_size,
             trichome_overlap=settings.trichome_overlap,
             debug_save_results=settings.debug_save_results,
