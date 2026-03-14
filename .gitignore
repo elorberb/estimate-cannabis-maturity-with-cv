@@ -21,6 +21,7 @@ __pycache__/
 dist/
 build/
 *.so
+.venv/
 
 # Checkpoints and model weights
 /checkpoints
@@ -68,3 +69,6 @@ document_segmentation_old
 
 # Generated CSV files
 src/utils/google_drive_utils/*.csv
+
+# datasets
+datasets/

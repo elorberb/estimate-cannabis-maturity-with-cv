@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 
 import numpy as np
 
-from src.color_classifier import ColorClassifier
-from src.stigma_detector import StigmaDetector
+from cannabis_maturity.color_classifier import ColorClassifier
+from cannabis_maturity.stigma_detector import StigmaDetector
 
 
 def test_detect_returns_empty_when_no_masks() -> None:

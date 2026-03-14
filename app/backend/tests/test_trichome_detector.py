@@ -5,8 +5,8 @@ from unittest.mock import MagicMock
 import numpy as np
 import torch
 
-from src.models import TrichomeType
-from src.trichome_detector import TrichomeDetector
+from cannabis_maturity.models import TrichomeType
+from cannabis_maturity.trichome_detector import TrichomeDetector
 
 
 def _make_detector(boxes: np.ndarray, class_ids: list[int]) -> TrichomeDetector:
