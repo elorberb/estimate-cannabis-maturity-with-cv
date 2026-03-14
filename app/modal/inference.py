@@ -32,13 +32,13 @@ inference_image = (
 )
 
 with inference_image.imports():
-    from annotation_renderer import AnnotationRenderer
-    from color_classifier import ColorClassifier
-    from crop_extractor import CropExtractor
-    from maturity_assessor import MaturityAssessor
-    from models import AnalysisResult
-    from stigma_detector import StigmaDetector
-    from trichome_detector import TrichomeDetector
+    from cannabis_maturity.annotation_renderer import AnnotationRenderer
+    from cannabis_maturity.color_classifier import ColorClassifier
+    from cannabis_maturity.crop_extractor import CropExtractor
+    from cannabis_maturity.maturity_assessor import MaturityAssessor
+    from cannabis_maturity.models import AnalysisResult
+    from cannabis_maturity.stigma_detector import StigmaDetector
+    from cannabis_maturity.trichome_detector import TrichomeDetector
     from ultralytics import YOLO
 
 model_volume = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
