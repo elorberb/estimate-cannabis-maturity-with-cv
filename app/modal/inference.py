@@ -58,7 +58,6 @@ class MaturityAnalyzer:
             self._trichome_detector = TrichomeDetector(
                 detection_model_path=DETECTION_MODEL_PATH,
                 classification_model=classification_model,
-                use_sliced_inference=True,
                 patch_size=512,
                 overlap=0.2,
             )

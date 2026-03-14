@@ -31,7 +31,6 @@ class LocalInferenceService:
         detection_model_path: str,
         classification_model_path: str,
         segmentation_model_path: str,
-        use_sliced_inference: bool = True,
         trichome_patch_size: int = 512,
         trichome_overlap: float = 0.2,
         debug_save_results: bool = False,
@@ -43,7 +42,6 @@ class LocalInferenceService:
         self._trichome_detector = TrichomeDetector(
             detection_model_path=detection_model_path,
             classification_model=classification_model,
-            use_sliced_inference=use_sliced_inference,
             patch_size=trichome_patch_size,
             overlap=trichome_overlap,
         )

@@ -19,7 +19,6 @@ class Settings(BaseSettings):
 
     log_level: str = "INFO"
 
-    use_sliced_inference: bool = True
     trichome_patch_size: int = 512
     trichome_overlap: float = 0.2
 
