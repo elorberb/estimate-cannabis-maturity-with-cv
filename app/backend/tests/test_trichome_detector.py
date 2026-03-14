@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import torch
@@ -10,10 +10,10 @@ from cannabis_maturity.trichome_detector import TrichomeDetector
 
 
 def _make_detector(boxes: np.ndarray, class_ids: list[int]) -> TrichomeDetector:
-    detection_model = MagicMock()
     det_result = MagicMock()
     det_result.boxes.xyxy.cpu.return_value.numpy.return_value = boxes
-    detection_model.predict.return_value = [det_result]
+    mock_yolo = MagicMock()
+    mock_yolo.return_value.predict.return_value = [det_result]
 
     classification_model = MagicMock()
     cls_results = []
@@ -25,7 +25,11 @@ def _make_detector(boxes: np.ndarray, class_ids: list[int]) -> TrichomeDetector:
         cls_results.append([cls_result])
     classification_model.side_effect = cls_results
 
-    return TrichomeDetector(detection_model, classification_model)
+    with patch("cannabis_maturity.trichome_detector.YOLO", mock_yolo):
+        detector = TrichomeDetector("fake_path.pt", classification_model, use_sliced_inference=False)
+
+    detector._detection_model.predict.return_value = [det_result]
+    return detector
 
 
 def test_detect_returns_correct_trichome_types() -> None:

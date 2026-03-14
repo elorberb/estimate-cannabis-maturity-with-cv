@@ -10,7 +10,7 @@ import numpy as np
 from cannabis_maturity.annotation_renderer import AnnotationRenderer
 from cannabis_maturity.crop_extractor import CropExtractor
 from cannabis_maturity.maturity_assessor import MaturityAssessor
-from cannabis_maturity.models import AnalysisResult, TrichomeResult, StigmaResult
+from cannabis_maturity.models import AnalysisResult, StigmaResult, TrichomeResult
 from cannabis_maturity.stigma_color_classifier import StigmaColorClassifier
 from cannabis_maturity.stigma_detector import StigmaDetector
 from cannabis_maturity.trichome_detector import TrichomeDetector
@@ -25,12 +25,23 @@ class LocalInferenceService:
         detection_model_path: str,
         classification_model_path: str,
         segmentation_model_path: str,
+        use_sliced_inference: bool = True,
+        trichome_patch_size: int = 512,
+        trichome_overlap: float = 0.2,
         debug_save_results: bool = False,
         debug_output_dir: str = "inference_samples",
     ) -> None:
-        self._detection_model = YOLO(detection_model_path)
-        self._classification_model = YOLO(classification_model_path)
-        self._segmentation_model = YOLO(segmentation_model_path)
+        classification_model = YOLO(classification_model_path)
+        segmentation_model = YOLO(segmentation_model_path)
+
+        self._trichome_detector = TrichomeDetector(
+            detection_model_path=detection_model_path,
+            classification_model=classification_model,
+            use_sliced_inference=use_sliced_inference,
+            patch_size=trichome_patch_size,
+            overlap=trichome_overlap,
+        )
+        self._stigma_detector = StigmaDetector(segmentation_model, StigmaColorClassifier())
         self._debug_save_results = debug_save_results
         self._debug_output_dir = Path(debug_output_dir)
 
@@ -43,13 +54,8 @@ class LocalInferenceService:
         if image_bgr is None:
             raise InferenceError("Could not decode image")
 
-        trichome_result = TrichomeDetector(
-            self._detection_model, self._classification_model
-        ).detect(image_bgr)
-
-        stigma_result = StigmaDetector(
-            self._segmentation_model, StigmaColorClassifier()
-        ).detect(image_bgr)
+        trichome_result = self._trichome_detector.detect(image_bgr)
+        stigma_result = self._stigma_detector.detect(image_bgr)
 
         maturity_stage, recommendation = MaturityAssessor.assess(
             trichome_result.distribution,
