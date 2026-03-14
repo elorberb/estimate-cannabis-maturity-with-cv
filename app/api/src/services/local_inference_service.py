@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import json
+import logging
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -17,6 +20,8 @@ from cannabis_maturity.trichome_detector import TrichomeDetector
 from ultralytics import YOLO
 
 from services.inference_error import InferenceError
+
+logger = logging.getLogger(__name__)
 
 
 class LocalInferenceService:
@@ -54,23 +59,31 @@ class LocalInferenceService:
         if image_bgr is None:
             raise InferenceError("Could not decode image")
 
+        t0 = time.perf_counter()
         trichome_result = self._trichome_detector.detect(image_bgr)
+        t1 = time.perf_counter()
+
         stigma_result = self._stigma_detector.detect(image_bgr)
+        t2 = time.perf_counter()
 
         maturity_stage, recommendation = MaturityAssessor.assess(
             trichome_result.distribution,
             stigma_result.avg_green_ratio,
             stigma_result.avg_orange_ratio,
         )
+        t3 = time.perf_counter()
 
         annotated_image = AnnotationRenderer.render(image_bgr, trichome_result, stigma_result)
         _, encoded_buffer = cv2.imencode(".jpg", annotated_image)
         annotated_image_b64 = base64.b64encode(encoded_buffer.tobytes()).decode()
+        t4 = time.perf_counter()
 
-        if self._debug_save_results:
-            self._save_debug_output(image_bgr, annotated_image, trichome_result, stigma_result)
+        logger.info(
+            "[inference] total=%.2fs  trichome=%.2fs  stigma=%.2fs  maturity=%.3fs  annotate=%.2fs",
+            t4 - t0, t1 - t0, t2 - t1, t3 - t2, t4 - t3,
+        )
 
-        return AnalysisResult(
+        result = AnalysisResult(
             trichome_result=trichome_result,
             stigma_result=stigma_result,
             maturity_stage=maturity_stage,
@@ -78,14 +91,18 @@ class LocalInferenceService:
             annotated_image_b64=annotated_image_b64,
             trichome_crops_b64=CropExtractor.extract_trichome_crops(image_bgr, trichome_result),
             stigma_crops_b64=CropExtractor.extract_stigma_crops(image_bgr, stigma_result),
-        ).model_dump()
+        )
+
+        if self._debug_save_results:
+            self._save_debug_output(image_bgr, annotated_image, result)
+
+        return result.model_dump()
 
     def _save_debug_output(
         self,
         image_bgr: np.ndarray,
         annotated_image: np.ndarray,
-        trichome_result: TrichomeResult,
-        stigma_result: StigmaResult,
+        result: AnalysisResult,
     ) -> None:
         run_dir = self._debug_output_dir / datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         (run_dir / "trichomes").mkdir(parents=True, exist_ok=True)
@@ -94,10 +111,13 @@ class LocalInferenceService:
         cv2.imwrite(str(run_dir / "original.jpg"), image_bgr)
         cv2.imwrite(str(run_dir / "annotated.jpg"), annotated_image)
 
-        for i, det in enumerate(trichome_result.detections):
+        for i, det in enumerate(result.trichome_result.detections):
             crop = image_bgr[int(det.bbox.y_min):int(det.bbox.y_max), int(det.bbox.x_min):int(det.bbox.x_max)]
             cv2.imwrite(str(run_dir / "trichomes" / f"{i}_{det.trichome_type.value}.jpg"), crop)
 
-        for i, det in enumerate(stigma_result.detections):
+        for i, det in enumerate(result.stigma_result.detections):
             crop = image_bgr[int(det.bbox.y_min):int(det.bbox.y_max), int(det.bbox.x_min):int(det.bbox.x_max)]
             cv2.imwrite(str(run_dir / "stigmas" / f"{i}.jpg"), crop)
+
+        summary = result.model_dump(exclude={"annotated_image_b64", "trichome_crops_b64", "stigma_crops_b64"})
+        (run_dir / "result.json").write_text(json.dumps(summary, indent=2, default=str))

@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from fastapi import FastAPI
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
