@@ -5,6 +5,7 @@ import base64
 import json
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -13,7 +14,7 @@ import numpy as np
 from cannabis_maturity.annotation_renderer import AnnotationRenderer
 from cannabis_maturity.crop_extractor import CropExtractor
 from cannabis_maturity.maturity_assessor import MaturityAssessor
-from cannabis_maturity.models import AnalysisResult, StigmaResult, TrichomeResult
+from cannabis_maturity.models import AnalysisResult
 from cannabis_maturity.stigma_color_classifier import StigmaColorClassifier
 from cannabis_maturity.stigma_detector import StigmaDetector
 from cannabis_maturity.trichome_detector import TrichomeDetector
@@ -60,27 +61,28 @@ class LocalInferenceService:
             raise InferenceError("Could not decode image")
 
         t0 = time.perf_counter()
-        trichome_result = self._trichome_detector.detect(image_bgr)
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            trichome_future = executor.submit(self._trichome_detector.detect, image_bgr)
+            stigma_future = executor.submit(self._stigma_detector.detect, image_bgr)
+            trichome_result = trichome_future.result()
+            stigma_result = stigma_future.result()
         t1 = time.perf_counter()
-
-        stigma_result = self._stigma_detector.detect(image_bgr)
-        t2 = time.perf_counter()
 
         maturity_stage, recommendation = MaturityAssessor.assess(
             trichome_result.distribution,
             stigma_result.avg_green_ratio,
             stigma_result.avg_orange_ratio,
         )
-        t3 = time.perf_counter()
+        t2 = time.perf_counter()
 
         annotated_image = AnnotationRenderer.render(image_bgr, trichome_result, stigma_result)
         _, encoded_buffer = cv2.imencode(".jpg", annotated_image)
         annotated_image_b64 = base64.b64encode(encoded_buffer.tobytes()).decode()
-        t4 = time.perf_counter()
+        t3 = time.perf_counter()
 
         logger.info(
-            "[inference] total=%.2fs  trichome=%.2fs  stigma=%.2fs  maturity=%.3fs  annotate=%.2fs",
-            t4 - t0, t1 - t0, t2 - t1, t3 - t2, t4 - t3,
+            "[inference] total=%.2fs  detection_parallel=%.2fs  maturity=%.3fs  annotate=%.2fs",
+            t3 - t0, t1 - t0, t2 - t1, t3 - t2,
         )
 
         result = AnalysisResult(
