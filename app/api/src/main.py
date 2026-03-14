@@ -21,6 +21,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             detection_model_path=settings.detection_model_path,
             classification_model_path=settings.classification_model_path,
             segmentation_model_path=settings.segmentation_model_path,
+            debug_save_results=settings.debug_save_results,
+            debug_output_dir=settings.debug_output_dir,
         )
     yield
 
