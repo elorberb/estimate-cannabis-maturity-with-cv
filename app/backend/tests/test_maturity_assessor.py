@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from src.maturity_assessor import MaturityAssessor
-from src.models import MaturityStage, TrichomeType
+from cannabis_maturity.maturity_assessor import MaturityAssessor
+from cannabis_maturity.models import MaturityStage, TrichomeType
 
 
 def test_early_stage() -> None:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from src.color_classifier import ColorClassifier
+from cannabis_maturity.color_classifier import ColorClassifier
 
 
 def test_classify_pure_green() -> None:
