@@ -1,17 +1,39 @@
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.routes import analysis
+from config import settings
+from routes import analysis
+from services.local_inference_service import LocalInferenceService
+from services.modal_client import ModalClient
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    if settings.inference_mode == "modal":
+        app.state.inference_service = ModalClient(settings.modal_app_name)
+    else:
+        app.state.inference_service = LocalInferenceService(
+            detection_model_path=settings.detection_model_path,
+            classification_model_path=settings.classification_model_path,
+            segmentation_model_path=settings.segmentation_model_path,
+        )
+    yield
+
 
 app = FastAPI(
-    title="Trichome Analysis API",
-    description="Cannabis maturity assessment via trichome and stigma analysis",
+    title="Cannabis Maturity Analysis API",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
