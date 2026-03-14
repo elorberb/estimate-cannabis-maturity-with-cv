@@ -6,7 +6,7 @@ import base64
 import cv2
 import numpy as np
 from cannabis_maturity.annotation_renderer import AnnotationRenderer
-from cannabis_maturity.color_classifier import ColorClassifier
+from cannabis_maturity.stigma_color_classifier import StigmaColorClassifier
 from cannabis_maturity.crop_extractor import CropExtractor
 from cannabis_maturity.maturity_assessor import MaturityAssessor
 from cannabis_maturity.models import AnalysisResult
@@ -42,7 +42,7 @@ class LocalInferenceService:
         ).detect(image_bgr)
 
         stigma_result = StigmaDetector(
-            self._segmentation_model, ColorClassifier()
+            self._segmentation_model, StigmaColorClassifier()
         ).detect(image_bgr)
 
         maturity_stage, recommendation = MaturityAssessor.assess(

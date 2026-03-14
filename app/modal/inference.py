@@ -33,7 +33,7 @@ inference_image = (
 
 with inference_image.imports():
     from cannabis_maturity.annotation_renderer import AnnotationRenderer
-    from cannabis_maturity.color_classifier import ColorClassifier
+    from cannabis_maturity.stigma_color_classifier import StigmaColorClassifier
     from cannabis_maturity.crop_extractor import CropExtractor
     from cannabis_maturity.maturity_assessor import MaturityAssessor
     from cannabis_maturity.models import AnalysisResult
@@ -78,7 +78,7 @@ class MaturityAnalyzer:
         trichome_detector = TrichomeDetector(self._detection_model, self._classification_model)
         trichome_result = trichome_detector.detect(image_bgr)
 
-        color_classifier = ColorClassifier()
+        color_classifier = StigmaColorClassifier()
         stigma_detector = StigmaDetector(self._segmentation_model, color_classifier)
         stigma_result = stigma_detector.detect(image_bgr)
 
