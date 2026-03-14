@@ -5,12 +5,12 @@ from typing import Any
 import cv2
 import numpy as np
 
-from cannabis_maturity.color_classifier import ColorClassifier
 from cannabis_maturity.models import BoundingBox, StigmaDetection, StigmaResult
+from cannabis_maturity.stigma_color_classifier import StigmaColorClassifier
 
 
 class StigmaDetector:
-    def __init__(self, segmentation_model: Any, color_classifier: ColorClassifier) -> None:
+    def __init__(self, segmentation_model: Any, color_classifier: StigmaColorClassifier) -> None:
         self._segmentation_model = segmentation_model
         self._color_classifier = color_classifier
 
