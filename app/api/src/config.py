@@ -19,5 +19,8 @@ class Settings(BaseSettings):
 
     log_level: str = "INFO"
 
+    debug_save_results: bool = False
+    debug_output_dir: str = "inference_samples"
+
 
 settings = Settings()
