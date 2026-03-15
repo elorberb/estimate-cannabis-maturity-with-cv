@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 
 import numpy as np
 
-from src.color_classifier import ColorClassifier
-from src.stigma_detector import StigmaDetector
+from cannabis_maturity.stigma_color_classifier import StigmaColorClassifier
+from cannabis_maturity.stigma_detector import StigmaDetector
 
 
 def test_detect_returns_empty_when_no_masks() -> None:
@@ -14,7 +14,7 @@ def test_detect_returns_empty_when_no_masks() -> None:
     result.masks = None
     seg_model.predict.return_value = [result]
 
-    classifier = ColorClassifier()
+    classifier = StigmaColorClassifier()
     detector = StigmaDetector(seg_model, classifier)
     image = np.zeros((100, 100, 3), dtype=np.uint8)
     res = detector.detect(image)
@@ -30,7 +30,7 @@ def test_detect_computes_ratios() -> None:
     result.boxes.xyxy.cpu.return_value.numpy.return_value = np.array([[10, 10, 90, 90]])
     seg_model.predict.return_value = [result]
 
-    classifier = MagicMock(spec=ColorClassifier)
+    classifier = MagicMock(spec=StigmaColorClassifier)
     classifier.classify.return_value = (0.7, 0.3)
 
     detector = StigmaDetector(seg_model, classifier)
@@ -52,7 +52,7 @@ def test_avg_ratios_computed_correctly() -> None:
     ])
     seg_model.predict.return_value = [result]
 
-    classifier = MagicMock(spec=ColorClassifier)
+    classifier = MagicMock(spec=StigmaColorClassifier)
     classifier.classify.side_effect = [(0.8, 0.2), (0.6, 0.4)]
 
     detector = StigmaDetector(seg_model, classifier)
