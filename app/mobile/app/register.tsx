@@ -10,8 +10,9 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -21,11 +22,17 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.inner}>
-        <Text style={styles.title}>Snap & Analyze</Text>
-        <Text style={styles.subtitle}>
-          Estimate cannabis maturity from a single macro photo.
-        </Text>
+        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.subtitle}>Join to start tracking your harvest.</Text>
 
+        <TextInput
+          style={styles.input}
+          placeholder="Name"
+          placeholderTextColor="#6b7280"
+          value={name}
+          onChangeText={setName}
+          autoCapitalize="words"
+        />
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -45,15 +52,11 @@ export default function LoginScreen() {
         />
 
         <Pressable style={styles.primaryButton} onPress={() => router.replace("/home")}>
-          <Text style={styles.primaryButtonText}>Sign In</Text>
+          <Text style={styles.primaryButtonText}>Create Account</Text>
         </Pressable>
 
-        <Pressable style={styles.secondaryButton} onPress={() => router.push("/register")}>
-          <Text style={styles.secondaryButtonText}>Register</Text>
-        </Pressable>
-
-        <Pressable onPress={() => router.replace("/home")}>
-          <Text style={styles.skipText}>Skip for now</Text>
+        <Pressable onPress={() => router.back()}>
+          <Text style={styles.backText}>Already have an account? Sign in</Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -102,28 +105,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#22c55e",
     alignItems: "center",
     marginTop: 8,
-    marginBottom: 12,
+    marginBottom: 24,
   },
   primaryButtonText: {
     fontSize: 18,
     fontWeight: "600",
     color: "#022c22",
   },
-  secondaryButton: {
-    width: "100%",
-    paddingVertical: 14,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#22c55e",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  secondaryButtonText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#22c55e",
-  },
-  skipText: {
+  backText: {
     fontSize: 15,
     color: "#6b7280",
     textDecorationLine: "underline",
