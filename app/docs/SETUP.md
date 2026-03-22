@@ -1,104 +1,158 @@
 # App setup — get running on your machine
 
-Use this when you clone the repo and want to run the API (and optionally the mobile app) with Modal and Supabase. All paths are from the **repository root** unless noted.
-
-> **Windows / Gili?** See [gili-setup.md](./gili-setup.md) for a step-by-step Windows guide.
+Everything you need to run the backend API, download model weights, and start the mobile app. Covers both Mac and Windows.
 
 ---
 
-## 1. Clone and install tools
+## Step 1 — Install tools (one-time)
+
+**uv** (Python package manager):
+
+- Mac: `brew install uv`
+- Windows (PowerShell): `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
+
+**Doppler** (secrets manager — replaces `.env`):
+
+- Mac: `brew install dopplerhq/cli/doppler`
+- Windows: `winget install Doppler.doppler`
+
+**Node.js** (for the mobile app — skip if already installed): https://nodejs.org
+
+Restart your terminal after installing.
+
+---
+
+## Step 2 — Pull latest
 
 ```bash
-git clone <repo-url>
-cd thesis
+git checkout main && git pull
 ```
 
-- **uv** (Python package manager): [install uv](https://docs.astral.sh/uv/getting-started/installation/)
-- **Doppler** (secrets): [install Doppler CLI](https://docs.doppler.com/docs/install-cli)
-- **Supabase CLI** (optional — only if running Supabase locally)
-
 ---
 
-## 2. Secrets (Doppler)
+## Step 3 — Secrets (Doppler)
 
-All environment variables are managed in Doppler. Ask Etay for a workspace invite.
+All secrets (Supabase URL, keys, etc.) are in Doppler. Ask Etay for a workspace invite, then:
 
 ```bash
-doppler login
+doppler login   # opens browser
 doppler setup --project cannabis-maturity-app --config dev --scope app/api
 ```
 
-No `.env` file needed — Doppler injects secrets at runtime.
+No `.env` file needed — Doppler injects secrets automatically when you run the API.
 
 ---
 
-## 3. Supabase
+## Step 4 — Install Python dependencies
 
-The shared hosted project is already set up (`analyses` table + `images` bucket). Nothing to do if you're using the shared project.
-
-If you need a local Supabase instead:
 ```bash
-cd app/supabase && supabase start
+cd app/api && uv sync
 ```
-Then update Doppler (or a local `.env`) with the printed API URL and service_role key.
 
 ---
 
-## 4. Model weights (local inference only)
+## Step 5 — Download model weights
 
-Skip if using `INFERENCE_MODE=modal`.
+The ML models (~102 MB) are stored in Supabase. Download them once:
 
 ```bash
+# Mac
 make download-weights
-# or: cd app/api && doppler run -- uv run python ../scripts/download_weights.py
-```
 
-Downloads ~102 MB to `checkpoints/` (one-time).
-
----
-
-## 5. Modal (only if INFERENCE_MODE=modal)
-
-```bash
-# Upload weights to Modal volume (one-time)
-cd app/modal && uv run modal run upload_weights.py
-
-# Deploy
-cd app/modal && uv run modal deploy inference.py
+# Windows (from app/api)
+doppler run -- uv run python ../scripts/download_weights.py
 ```
 
 ---
 
-## 6. Run the API
+## Step 6 — Run the API
 
 ```bash
+# Mac
 make run
-# or: cd app/api && doppler run -- uv run python run.py
+
+# Windows (from app/api)
+doppler run -- uv run python run.py
 ```
 
-- Health: http://127.0.0.1:8000/health
-- Docs: http://127.0.0.1:8000/docs
+The API starts at **http://localhost:8000**
+
+| URL | What it is |
+|---|---|
+| http://localhost:8000/health | Health check |
+| http://localhost:8000/docs | Interactive API docs |
+| `POST /api/v1/analyze` | Main endpoint |
 
 ---
 
-## 7. Mobile app (optional)
+## Step 7 — Test with a sample image
+
+Sample trichome photos are in `app/tests/fixtures/images/` — one per growth day.
+
+**Swagger UI** (easiest): go to http://localhost:8000/docs → `POST /api/v1/analyze` → Try it out → upload any sample image.
+
+**curl:**
+```bash
+# Mac
+curl -X POST "http://localhost:8000/api/v1/analyze?device_id=test" \
+  -F "file=@app/tests/fixtures/images/sample_day1.jpg"
+
+# Windows PowerShell
+curl -X POST "http://localhost:8000/api/v1/analyze?device_id=test" `
+  -F "file=@app/tests/fixtures/images/sample_day1.jpg"
+```
+
+---
+
+## Step 8 — Run the mobile app
 
 ```bash
 cd app/mobile && npm install && npx expo start
 ```
 
+Set the API base URL to your machine's IP (not `localhost`) so your phone/emulator can reach it.
+Find your IP: `ipconfig` (Windows) or `ifconfig` (Mac) → look for the IPv4 address.
+
 ---
 
-## Checklist
+## Daily workflow
 
-| Step | What to do |
-|------|------------|
-| 1 | Clone repo, install uv + Doppler |
-| 2 | `doppler login` + `doppler setup` |
-| 3 | Use shared Supabase project (already set up) |
-| 4 | If local inference: `make download-weights` |
-| 5 | If Modal: upload weights + `modal deploy inference.py` |
-| 6 | `make run` |
-| 7 | Optional: `cd app/mobile && npx expo start` |
+```bash
+# Terminal 1 — backend (Mac)
+make run
 
-More detail: [Working with Modal and Supabase](./working-with-modal-and-supabase.md).
+# Terminal 1 — backend (Windows, from app/api)
+doppler run -- uv run python run.py
+
+# Terminal 2 — mobile app
+cd app/mobile && npx expo start
+```
+
+---
+
+## Supabase (already set up — nothing to do)
+
+The shared Supabase project has the `analyses` table and `images` bucket already configured. Doppler has the credentials. You don't need to touch it.
+
+---
+
+## Modal GPU inference (Etay only)
+
+```bash
+cd app/modal && uv run modal run upload_weights.py   # upload weights once
+cd app/modal && uv run modal deploy inference.py     # deploy
+```
+
+Switch to Modal by setting `INFERENCE_MODE=modal` in Doppler (dashboard → cannabis-maturity-app → dev).
+
+---
+
+## Troubleshooting
+
+**`doppler: command not found`** — restart terminal after installing.
+
+**`uv: command not found`** — restart terminal after installing.
+
+**API 500 on `/analyze`** — weights not downloaded yet, re-run Step 5.
+
+**Mobile app can't reach API** — use your machine's IP address, not `localhost`.
