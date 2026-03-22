@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import json
 from pathlib import Path
 
 import cv2
@@ -16,10 +17,12 @@ from constants import (
 
 app = modal.App("cannabis-maturity-inference")
 
+_MODAL_DIR = Path(__file__).parent
 _BACKEND_SRC = Path(__file__).parent.parent / "backend" / "src"
 
 inference_image = (
     modal.Image.debian_slim(python_version="3.10")
+    .apt_install("libgl1", "libglib2.0-0")
     .pip_install(
         "ultralytics>=8.0.0",
         "opencv-python-headless>=4.8.0",
@@ -29,6 +32,7 @@ inference_image = (
         "sahi>=0.11.0",
     )
     .add_local_dir(str(_BACKEND_SRC), remote_path="/root")
+    .add_local_file(str(_MODAL_DIR / "constants.py"), remote_path="/root/constants.py")
 )
 
 with inference_image.imports():
@@ -99,7 +103,7 @@ class MaturityAnalyzer:
             annotated_image_b64=base64.b64encode(buf.tobytes()).decode(),
             trichome_crops_b64=CropExtractor.extract_trichome_crops(image_bgr, trichome_result),
             stigma_crops_b64=CropExtractor.extract_stigma_crops(image_bgr, stigma_result),
-        ).model_dump()
+        ).model_dump(mode="json")
 
 
 @app.local_entrypoint()

@@ -13,7 +13,7 @@ class ModalClient:
 
     async def analyze(self, image_bytes: bytes) -> dict:
         try:
-            function = modal.Function.lookup(self._app_name, "MaturityAnalyzer.analyze")
-            return await asyncio.to_thread(function.remote, image_bytes)
+            cls = modal.Cls.from_name(self._app_name, "MaturityAnalyzer")
+            return await asyncio.to_thread(cls().analyze.remote, image_bytes)
         except modal.exception.Error as e:
             raise InferenceError(f"Modal inference failed: {e}") from e
