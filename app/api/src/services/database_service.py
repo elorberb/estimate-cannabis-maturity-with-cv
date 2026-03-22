@@ -17,12 +17,24 @@ class DatabaseService:
         annotated_image_url: str | None,
         result_payload: dict,
     ) -> dict:
+        trichome = result_payload.get("trichome_result", {})
+        stigma = result_payload.get("stigma_result", {})
         record = {
             "id": str(uuid.uuid4()),
             "device_id": device_id,
             "image_url": image_url,
             "annotated_image_url": annotated_image_url,
-            "result": result_payload,
+            "trichome_distribution": trichome.get("distribution"),
+            "stigma_ratios": {
+                "green": stigma.get("avg_green_ratio"),
+                "orange": stigma.get("avg_orange_ratio"),
+            },
+            "maturity_stage": result_payload.get("maturity_stage"),
+            "recommendation": result_payload.get("recommendation"),
+            "detections": {
+                "trichomes": trichome.get("detections"),
+                "stigmas": stigma.get("detections"),
+            },
             "created_at": datetime.datetime.now(datetime.UTC).isoformat(),
         }
         response = self._client.table("analyses").insert(record).execute()
