@@ -11,7 +11,6 @@ Use these to test the `/api/v1/analyze` endpoint without needing your own images
 | `sample_day5.jpg` | 2024-06-13 | Mid |
 | `sample_day6.jpg` | 2024-06-17 | Mid-late |
 | `sample_day7.jpg` | 2024-06-20 | Late |
-| `sample_day8.jpg` | 2024-06-24 | Late |
 | `sample_day9.jpg` | 2024-06-27 | Final measurement |
 
 ## Usage
