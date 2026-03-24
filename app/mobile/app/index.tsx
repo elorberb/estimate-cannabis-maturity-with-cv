@@ -7,125 +7,411 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { Colors, Gradients } from "../constants/theme";
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={styles.inner}>
-        <Text style={styles.title}>Snap & Analyze</Text>
-        <Text style={styles.subtitle}>
-          Estimate cannabis maturity from a single macro photo.
-        </Text>
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.glowTopRight} />
+      <View style={styles.glowBottomLeft} />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#6b7280"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#6b7280"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.logoArea}>
+            <LinearGradient
+              colors={Gradients.vitality}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.logoIconWrapper}
+            >
+              <Ionicons name="leaf" size={30} color={Colors.accentText} />
+            </LinearGradient>
+            <View style={styles.logoTextGroup}>
+              <Text style={styles.logoTextAgri}>AGRI</Text>
+              <Text style={styles.logoTextVision}>VISION</Text>
+            </View>
+            <Text style={styles.tagline}>
+              AI-powered cannabis maturity analysis
+            </Text>
+          </View>
 
-        <Pressable style={styles.primaryButton} onPress={() => router.replace("/home")}>
-          <Text style={styles.primaryButtonText}>Sign In</Text>
-        </Pressable>
+          <View style={styles.formCard}>
+            <View style={styles.formCardGlow} />
+            <Text style={styles.formHeading}>Welcome back</Text>
+            <Text style={styles.formSubheading}>Sign in to your account</Text>
 
-        <Pressable style={styles.secondaryButton} onPress={() => router.push("/register")}>
-          <Text style={styles.secondaryButtonText}>Register</Text>
-        </Pressable>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>EMAIL ADDRESS</Text>
+              <View style={[styles.inputWrapper, emailFocused && styles.inputWrapperFocused]}>
+                <Ionicons name="mail-outline" size={18} color={Colors.accent} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="farmer@agrivision.ai"
+                  placeholderTextColor={Colors.textMuted}
+                  value={email}
+                  onChangeText={setEmail}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  returnKeyType="next"
+                />
+              </View>
+            </View>
 
-        <Pressable onPress={() => router.replace("/home")}>
-          <Text style={styles.skipText}>Skip for now</Text>
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+            <View style={styles.fieldGroup}>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>PASSWORD</Text>
+                <Pressable>
+                  <Text style={styles.forgotText}>Forgot password?</Text>
+                </Pressable>
+              </View>
+              <View style={[styles.inputWrapper, passwordFocused && styles.inputWrapperFocused]}>
+                <Ionicons name="lock-closed-outline" size={18} color={Colors.accent} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="••••••••"
+                  placeholderTextColor={Colors.textMuted}
+                  value={password}
+                  onChangeText={setPassword}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  secureTextEntry={!passwordVisible}
+                  returnKeyType="done"
+                />
+                <Pressable onPress={() => setPasswordVisible(!passwordVisible)} style={styles.eyeButton}>
+                  <Ionicons name={passwordVisible ? "eye-outline" : "eye-off-outline"} size={18} color={Colors.textMuted} />
+                </Pressable>
+              </View>
+            </View>
+
+            <Pressable style={styles.primaryButtonWrapper} onPress={() => router.replace("/home")}>
+              {({ pressed }) => (
+                <LinearGradient
+                  colors={Gradients.vitality}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[styles.primaryButton, pressed && styles.pressed]}
+                >
+                  <Text style={styles.primaryButtonText}>Sign In</Text>
+                  <Ionicons name="arrow-forward" size={16} color={Colors.accentText} />
+                </LinearGradient>
+              )}
+            </Pressable>
+
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or continue with</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <Pressable
+              style={styles.googleButton}
+              onPress={() => router.replace("/home")}
+            >
+              <View style={styles.googleSvgBox}>
+                <Text style={styles.googleG}>G</Text>
+              </View>
+              <Text style={styles.googleText}>Continue with Google</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.footer}>
+            <Pressable onPress={() => router.push("/register")}>
+              <Text style={styles.footerLink}>
+                Don't have an account?{" "}
+                <Text style={styles.footerLinkAccent}>Create one</Text>
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.skipButton}
+              onPress={() => router.replace("/home")}
+            >
+              <Text style={styles.skipText}>Continue without account</Text>
+              <Ionicons name="chevron-forward" size={12} color={Colors.textMuted} />
+            </Pressable>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      <View style={styles.bottomGlow} />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
-    backgroundColor: "#020617",
+    backgroundColor: Colors.background,
   },
-  inner: {
+  flex: {
     flex: 1,
-    alignItems: "center",
+  },
+  glowTopRight: {
+    position: "absolute",
+    top: -80,
+    right: -80,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: Colors.accent,
+    opacity: 0.04,
+  },
+  glowBottomLeft: {
+    position: "absolute",
+    bottom: -60,
+    left: -60,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: Colors.tertiary,
+    opacity: 0.04,
+  },
+  bottomGlow: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: Colors.accent,
+    opacity: 0.25,
+  },
+  scroll: {
+    flexGrow: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
+    paddingVertical: 32,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#e5e7eb",
+  logoArea: {
+    alignItems: "center",
+    marginBottom: 36,
+  },
+  logoIconWrapper: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  logoTextGroup: {
+    flexDirection: "row",
     marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 16,
-    color: "#9ca3af",
+  logoTextAgri: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: Colors.accent,
+    letterSpacing: 4,
+  },
+  logoTextVision: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: Colors.accentDark,
+    letterSpacing: 4,
+  },
+  tagline: {
+    fontSize: 13,
+    color: Colors.textMuted,
     textAlign: "center",
-    marginBottom: 40,
+    letterSpacing: 0.3,
+  },
+  formCard: {
+    backgroundColor: "rgba(23,31,54,0.70)",
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 28,
+    marginBottom: 20,
+    overflow: "hidden",
+  },
+  formCardGlow: {
+    position: "absolute",
+    top: -40,
+    right: -40,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Colors.accent,
+    opacity: 0.06,
+  },
+  formHeading: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    letterSpacing: -0.4,
+    marginBottom: 4,
+  },
+  formSubheading: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginBottom: 28,
+    fontWeight: "500",
+    letterSpacing: 0.3,
+  },
+  fieldGroup: {
+    marginBottom: 18,
+  },
+  label: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: Colors.textSecondary,
+    marginBottom: 8,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+  },
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  forgotText: {
+    fontSize: 10,
+    color: Colors.accent,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.surfaceHighest,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+  },
+  inputWrapperFocused: {
+    borderColor: "rgba(107,255,143,0.4)",
+  },
+  inputIcon: {
+    marginRight: 10,
   },
   input: {
-    width: "100%",
+    flex: 1,
     height: 50,
-    backgroundColor: "#0f172a",
-    borderWidth: 1,
-    borderColor: "#1e293b",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    color: "#e5e7eb",
-    fontSize: 16,
-    marginBottom: 12,
+    color: Colors.textPrimary,
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  eyeButton: {
+    padding: 4,
+  },
+  primaryButtonWrapper: {
+    width: "100%",
+    marginTop: 8,
   },
   primaryButton: {
-    width: "100%",
-    paddingVertical: 14,
-    borderRadius: 999,
-    backgroundColor: "#22c55e",
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 8,
-    marginBottom: 12,
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 999,
+    gap: 8,
+  },
+  pressed: {
+    opacity: 0.88,
   },
   primaryButtonText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#022c22",
+    fontSize: 15,
+    fontWeight: "700",
+    color: Colors.accentText,
+    letterSpacing: 0.5,
   },
-  secondaryButton: {
-    width: "100%",
-    paddingVertical: 14,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#22c55e",
+  dividerRow: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 24,
+    marginVertical: 24,
+    gap: 12,
   },
-  secondaryButtonText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#22c55e",
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+    opacity: 0.3,
+  },
+  dividerText: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    paddingVertical: 15,
+    borderRadius: 999,
+    backgroundColor: "#ffffff",
+    gap: 12,
+  },
+  googleSvgBox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    backgroundColor: "#4285F4",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  googleG: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#ffffff",
+  },
+  googleText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1f1f1f",
+    letterSpacing: 0.2,
+  },
+  footer: {
+    alignItems: "center",
+    gap: 14,
+  },
+  footerLink: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: "500",
+  },
+  footerLinkAccent: {
+    color: Colors.accent,
+    fontWeight: "700",
+  },
+  skipButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 6,
   },
   skipText: {
-    fontSize: 15,
-    color: "#6b7280",
-    textDecorationLine: "underline",
+    fontSize: 11,
+    color: Colors.textMuted,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
   },
 });

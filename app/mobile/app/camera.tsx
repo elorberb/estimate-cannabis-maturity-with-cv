@@ -1,16 +1,35 @@
-import { View, Text, Pressable, Image, StyleSheet, Alert } from "react-native";
+import { useState } from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  Image,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  Dimensions,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
+import { Colors } from "../constants/theme";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const GRID_PADDING = 20;
+const GRID_GAP = 8;
+const CELL_SIZE = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP * 2) / 3;
 
 export default function CameraScreen() {
   const router = useRouter();
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>([]);
 
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Permission required", "Camera access is needed to take photos.");
+      Alert.alert(
+        "Permission required",
+        "Camera access is needed to take photos."
+      );
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -18,130 +37,285 @@ export default function CameraScreen() {
       quality: 1,
     });
     if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
+      setImages((prev) => [...prev, result.assets[0].uri]);
     }
   };
 
   const chooseFromGallery = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permission =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Permission required", "Gallery access is needed to pick photos.");
+      Alert.alert(
+        "Permission required",
+        "Gallery access is needed to pick photos."
+      );
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 1,
+      allowsMultipleSelection: true,
     });
     if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
+      setImages((prev) => [...prev, ...result.assets.map((a) => a.uri)]);
     }
   };
 
+  const removeImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const analyzeLabel =
+    images.length === 0
+      ? "Add photos to analyze"
+      : `Analyze ${images.length} Photo${images.length > 1 ? "s" : ""}`;
+
   return (
-    <View style={styles.container}>
-      <Pressable style={styles.backButton} onPress={() => router.back()}>
-        <Text style={styles.backButtonText}>← Back</Text>
-      </Pressable>
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()}>
+          <Text style={styles.backText}>← Back</Text>
+        </Pressable>
+        <Text style={styles.headerTitle}>New Analysis</Text>
+        <View style={styles.headerSpacer} />
+      </View>
 
-      <Text style={styles.title}>New Analysis</Text>
-      <Text style={styles.subtitle}>
-        Hold your phone 2–3 cm from the trichomes for best results.
-      </Text>
+      <View style={styles.tipBanner}>
+        <View style={styles.tipAccent} />
+        <Text style={styles.tipText}>
+          Hold your phone 2–3 cm from the trichomes for best results.
+        </Text>
+      </View>
 
-      {selectedImage ? (
-        <Image source={{ uri: selectedImage }} style={styles.preview} />
-      ) : (
-        <View style={styles.placeholder}>
-          <Text style={styles.placeholderText}>No photo selected</Text>
+      <ScrollView
+        style={styles.imageArea}
+        contentContainerStyle={styles.imageAreaContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {images.length === 0 ? (
+          <View style={styles.emptyImageArea}>
+            <View style={styles.emptyIconPlaceholder} />
+            <Text style={styles.emptyTitle}>No photos added</Text>
+            <Text style={styles.emptySubtitle}>
+              Use the buttons below to capture or select macro images.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.imageGrid}>
+            {images.map((uri, index) => (
+              <View key={index} style={styles.imageCell}>
+                <Image source={{ uri }} style={styles.thumbnail} />
+                <Pressable
+                  style={styles.removeButton}
+                  onPress={() => removeImage(index)}
+                >
+                  <Text style={styles.removeButtonText}>×</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      <View style={styles.bottomArea}>
+        <View style={styles.captureRow}>
+          <Pressable style={styles.captureButton} onPress={takePhoto}>
+            <Text style={styles.captureLabel}>Take Photo</Text>
+          </Pressable>
+          <Pressable style={styles.captureButton} onPress={chooseFromGallery}>
+            <Text style={styles.captureLabel}>Choose from Gallery</Text>
+          </Pressable>
         </View>
-      )}
 
-      <Pressable style={styles.primaryButton} onPress={takePhoto}>
-        <Text style={styles.primaryButtonText}>Take Photo</Text>
-      </Pressable>
-
-      <Pressable style={styles.secondaryButton} onPress={chooseFromGallery}>
-        <Text style={styles.secondaryButtonText}>Choose from Gallery</Text>
-      </Pressable>
-    </View>
+        <Pressable
+          style={[
+            styles.analyzeButton,
+            images.length === 0 && styles.analyzeButtonDisabled,
+          ]}
+          disabled={images.length === 0}
+          onPress={() => router.push("/results")}
+        >
+          <Text
+            style={[
+              styles.analyzeButtonText,
+              images.length === 0 && styles.analyzeButtonTextDisabled,
+            ]}
+          >
+            {analyzeLabel}
+          </Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  backText: {
+    fontSize: 15,
+    color: Colors.accent,
+    fontWeight: "500",
+    width: 60,
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 17,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+  },
+  headerSpacer: {
+    width: 60,
+  },
+  tipBanner: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: "hidden",
+  },
+  tipAccent: {
+    width: 3,
+    backgroundColor: Colors.warning,
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 19,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  imageArea: {
+    flex: 1,
+    paddingHorizontal: GRID_PADDING,
+  },
+  imageAreaContent: {
+    flexGrow: 1,
+  },
+  emptyImageArea: {
+    flex: 1,
+    minHeight: 200,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
+    gap: 8,
+  },
+  emptyIconPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 8,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: Colors.textSecondary,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: Colors.textMuted,
+    textAlign: "center",
+    lineHeight: 19,
+  },
+  imageGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: GRID_GAP,
+  },
+  imageCell: {
+    width: CELL_SIZE,
+    height: CELL_SIZE,
+    borderRadius: 10,
+    overflow: "visible",
+  },
+  thumbnail: {
+    width: CELL_SIZE,
+    height: CELL_SIZE,
+    borderRadius: 10,
+  },
+  removeButton: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.danger,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  removeButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: "700",
+  },
+  bottomArea: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+    borderTopWidth: 1,
+    borderTopColor: Colors.surfaceElevated,
+    gap: 10,
+  },
+  captureRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  captureButton: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
-    backgroundColor: "#020617",
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingVertical: 14,
   },
-  backButton: {
-    position: "absolute",
-    top: 60,
-    left: 24,
-  },
-  backButtonText: {
-    color: "#22c55e",
-    fontSize: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#e5e7eb",
-    marginBottom: 8,
-  },
-  subtitle: {
+  captureLabel: {
     fontSize: 14,
-    color: "#9ca3af",
-    textAlign: "center",
-    marginBottom: 32,
+    fontWeight: "600",
+    color: Colors.textPrimary,
   },
-  placeholder: {
+  analyzeButton: {
     width: "100%",
-    height: 240,
-    backgroundColor: "#0f172a",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#1e293b",
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: Colors.accent,
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 32,
   },
-  placeholderText: {
-    color: "#6b7280",
+  analyzeButtonDisabled: {
+    backgroundColor: Colors.surfaceElevated,
+  },
+  analyzeButtonText: {
     fontSize: 15,
+    fontWeight: "700",
+    color: Colors.accentText,
+    letterSpacing: 0.3,
   },
-  preview: {
-    width: "100%",
-    height: 240,
-    borderRadius: 16,
-    marginBottom: 32,
-    resizeMode: "cover",
-  },
-  primaryButton: {
-    width: "100%",
-    paddingVertical: 14,
-    borderRadius: 999,
-    backgroundColor: "#22c55e",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  primaryButtonText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#022c22",
-  },
-  secondaryButton: {
-    width: "100%",
-    paddingVertical: 14,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#22c55e",
-    alignItems: "center",
-  },
-  secondaryButtonText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#22c55e",
+  analyzeButtonTextDisabled: {
+    color: Colors.textMuted,
   },
 });

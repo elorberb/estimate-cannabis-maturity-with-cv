@@ -7,6 +7,11 @@ export default function RootLayout() {
       <Stack.Screen name="register" />
       <Stack.Screen name="home" />
       <Stack.Screen name="camera" />
+      <Stack.Screen name="results" />
+      <Stack.Screen name="review" />
+      <Stack.Screen name="history" />
+      <Stack.Screen name="how-it-works" />
+      <Stack.Screen name="settings" />
     </Stack>
   );
 }
