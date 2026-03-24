@@ -4,16 +4,10 @@ import {
   HealthResponse,
 } from "./types";
 
-const API_BASE_URL = "http://192.168.1.213:8000";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
-  });
+  const response = await fetch(`${API_BASE_URL}${path}`, options);
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
@@ -24,23 +18,29 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const ApiClient = {
-  async analyzeImage(imageUrl: string): Promise<AnalyzeResponse> {
-    return request<AnalyzeResponse>("/analyze", {
+  async analyzeImage(fileUri: string, deviceId: string): Promise<AnalyzeResponse> {
+    const form = new FormData();
+    form.append("file", {
+      uri: fileUri,
+      name: "photo.jpg",
+      type: "image/jpeg",
+    } as unknown as Blob);
+
+    return request<AnalyzeResponse>(`/api/v1/analyze?device_id=${encodeURIComponent(deviceId)}`, {
       method: "POST",
-      body: JSON.stringify({ image_url: imageUrl }),
+      body: form,
     });
   },
 
   async getAnalysis(id: string): Promise<AnalyzeResponse> {
-    return request<AnalyzeResponse>(`/analyses/${id}`);
+    return request<AnalyzeResponse>(`/api/v1/analyses/${id}`);
   },
 
   async listAnalyses(): Promise<AnalysisListResponse> {
-    return request<AnalysisListResponse>("/analyses");
+    return request<AnalysisListResponse>("/api/v1/analyses");
   },
 
   async getHealth(): Promise<HealthResponse> {
-    return request<HealthResponse>("/health");
+    return request<HealthResponse>("/api/v1/health");
   },
 };
-
