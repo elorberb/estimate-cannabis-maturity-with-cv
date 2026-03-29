@@ -1,245 +1,386 @@
-import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
+import { useState, useCallback } from "react";
+import { View, Text, Pressable, StyleSheet, ScrollView, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Colors, Gradients, MaturityColors } from "../constants/theme";
-import { MaturityBadge } from "../components/MaturityBadge";
-import { BottomNav } from "../components/BottomNav";
+import { useTheme } from "../contexts/ThemeContext";
+import { DonutChart } from "../components/DonutChart";
+import { AnalyzeResponse, TrichomeType } from "../api/types";
+import { AnalysisResultStore } from "../store/analysisResult";
+import { ApiClient } from "../api/client";
 
-export const MOCK_RESULT = {
-  maturity_stage: "peak",
-  recommendation:
-    "Trichome analysis indicates optimal THC concentration. 73% of glandular heads have reached a milky/cloudy state with 15% turning amber. Harvest within the next 48 hours for maximum potency and terpene profile retention.",
-  trichome: { clear: 12, cloudy: 73, amber: 15, total: 247 },
-  stigma: { orange: 71, green: 29, total: 38 },
+const MATURITY_PREDICTION: Record<string, { heading: string; subtitle: string }> = {
+  early: {
+    heading: "3–4 weeks to peak",
+    subtitle: "Plant is in early flowering. Significant development ahead.",
+  },
+  developing: {
+    heading: "1–2 weeks to peak",
+    subtitle: "Trichomes are developing. Continue monitoring daily.",
+  },
+  peak: {
+    heading: "Harvest now",
+    subtitle: "Optimal THC concentration reached. Act within 24–48 hours.",
+  },
+  mature: {
+    heading: "1–3 days from peak",
+    subtitle: "Review each section below to validate the current harvest window.",
+  },
+  late: {
+    heading: "Past peak",
+    subtitle: "Trichome degradation in progress. Harvest immediately.",
+  },
 };
 
-function SegmentedBar({
-  segments,
-}: {
-  segments: { color: string; value: number; label: string }[];
-}) {
-  const total = segments.reduce((sum, s) => sum + s.value, 0) || 1;
-  return (
-    <View>
-      <View style={barStyles.track}>
-        {segments.map((seg, i) => (
-          <View
-            key={i}
-            style={[
-              barStyles.segment,
-              { flex: seg.value / total, backgroundColor: seg.color },
-            ]}
-          />
-        ))}
-      </View>
-      <View style={barStyles.stats}>
-        {segments.map((seg, i) => (
-          <View key={i} style={barStyles.statCol}>
-            <Text style={[barStyles.statLabel, { color: seg.color }]}>
-              {seg.label.toUpperCase()}
-            </Text>
-            <Text style={barStyles.statValue}>{seg.value}%</Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
+const DOMINANT_PHASE: Record<TrichomeType, { title: string; desc: string }> = {
+  clear: {
+    title: "Clear trichomes",
+    desc: "Most heads currently cluster in the clear stage.",
+  },
+  cloudy: {
+    title: "Milky trichomes",
+    desc: "Peak THC production in progress. Harvest window approaching.",
+  },
+  amber: {
+    title: "Amber trichomes",
+    desc: "Degradation in progress. Harvest soon for sedative effect.",
+  },
+};
+
+const TRICHOME_COLORS: Record<TrichomeType, string> = {
+  clear: "#6f758b",
+  cloudy: "#dfe4fe",
+  amber: "#d97706",
+};
+
+const STIGMA_COLORS = {
+  green: "#6bff8f",
+  orange: "#d97706",
+};
+
+export const MOCK_RESULT: AnalyzeResponse = {
+  id: "mock-id",
+  created_at: "2026-03-24T12:00:00Z",
+  device_id: "mock-device",
+  image_url: "",
+  annotated_image_url: null,
+  maturity_stage: "mature",
+  recommendation:
+    "Trichome analysis indicates optimal THC concentration. 73% of glandular heads have reached a milky/cloudy state with 15% turning amber. Harvest within the next 48 hours for maximum potency.",
+  trichome_result: {
+    detections: [],
+    distribution: { clear: 15, cloudy: 36, amber: 8 },
+    total_count: 36,
+  },
+  stigma_result: {
+    detections: [],
+    avg_green_ratio: 0.53,
+    avg_orange_ratio: 0.47,
+    total_count: 6,
+  },
+  trichome_crops_b64: null,
+  stigma_crops_b64: null,
+};
+
+function getDominantType(distribution: Record<TrichomeType, number>): TrichomeType {
+  const entries = Object.entries(distribution) as [TrichomeType, number][];
+  return entries.sort(([, a], [, b]) => b - a)[0][0];
 }
 
-const barStyles = StyleSheet.create({
-  track: {
-    flexDirection: "row",
-    height: 12,
-    borderRadius: 6,
-    overflow: "hidden",
-    backgroundColor: Colors.surfaceHighest,
-  },
-  segment: {
-    height: "100%",
-  },
-  stats: {
-    flexDirection: "row",
-    marginTop: 12,
-  },
-  statCol: {
-    flex: 1,
-    alignItems: "center",
-    borderLeftWidth: 1,
-    borderLeftColor: "rgba(65,71,91,0.2)",
-    paddingLeft: 8,
-  },
-  statLabel: {
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 0.8,
-    marginBottom: 2,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: Colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-});
+function pct(value: number, total: number): number {
+  return total === 0 ? 0 : Math.round((value / total) * 100);
+}
 
 export default function ResultsScreen() {
   const router = useRouter();
-  const stage = MOCK_RESULT.maturity_stage as keyof typeof MaturityColors;
-  const stageColors = MaturityColors[stage];
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { Colors, Gradients, getMaturityColors } = useTheme();
+  const styles = createStyles(Colors);
+  const [result, setResult] = useState<AnalyzeResponse>(AnalysisResultStore.get() ?? MOCK_RESULT);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (id) {
+        ApiClient.getAnalysis(id).then(setResult).catch(() => {
+          setResult(AnalysisResultStore.get() ?? MOCK_RESULT);
+        });
+      } else {
+        setResult(AnalysisResultStore.get() ?? MOCK_RESULT);
+      }
+    }, [id])
+  );
+
+  const stage = result.maturity_stage;
+  const stageColors = getMaturityColors(stage);
+  const prediction = MATURITY_PREDICTION[stage] ?? MATURITY_PREDICTION.peak;
+  const totalTrichomes = result.trichome_result.total_count;
+  const dist = result.trichome_result.distribution;
+  const clearPct = pct(dist.clear, totalTrichomes);
+  const cloudyPct = pct(dist.cloudy, totalTrichomes);
+  const amberPct = pct(dist.amber, totalTrichomes);
+  const dominantType = getDominantType(dist);
+  const dominantPhase = DOMINANT_PHASE[dominantType];
+  const dominantPct = pct(dist[dominantType], totalTrichomes);
+  const greenPct = Math.round(result.stigma_result.avg_green_ratio * 100);
+  const orangePct = Math.round(result.stigma_result.avg_orange_ratio * 100);
+  const dominantStigma = greenPct >= orangePct ? "green" : "orange";
+
+  const trichomeTypes: { type: TrichomeType; label: string; value: number }[] = [
+    { type: "clear", label: "Clear", value: clearPct },
+    { type: "cloudy", label: "Cloudy", value: cloudyPct },
+    { type: "amber", label: "Amber", value: amberPct },
+  ];
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Pressable style={styles.backButton} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={20} color={Colors.accent} />
-            </Pressable>
-            <Text style={styles.headerTitle}>Analysis Results</Text>
-          </View>
-          <View style={styles.headerRight}>
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={20} color={Colors.textPrimary} />
+            <Text style={styles.backLabel}>Back</Text>
+          </Pressable>
+          <Text style={styles.headerTitle}>Flower Analysis</Text>
+          <Pressable style={styles.headerAction}>
             <Ionicons name="share-outline" size={20} color={Colors.textSecondary} />
-            <Ionicons name="ellipsis-vertical" size={20} color={Colors.textSecondary} style={{ marginLeft: 16 }} />
-          </View>
+          </Pressable>
         </View>
 
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.maturityCard}>
-            <LinearGradient
-              colors={Gradients.vitality}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.maturityAccentBar}
-            />
-            <View style={styles.maturityBody}>
-              <View style={styles.maturityTop}>
-                <View>
-                  <Text style={styles.maturityLabel}>MATURITY STAGE</Text>
-                  <Text style={[styles.maturityStage, { color: stageColors.text }]}>
-                    {stageColors.label}
-                  </Text>
-                </View>
-                <View style={styles.confidenceGroup}>
-                  <View style={styles.readyBadge}>
-                    <Text style={styles.readyBadgeText}>READY</Text>
-                  </View>
-                  <View style={styles.confidencePill}>
-                    <View style={styles.confidenceDot} />
-                    <Text style={styles.confidenceText}>94% AI Confidence</Text>
-                  </View>
-                </View>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          {/* Hero card */}
+          <View style={styles.heroCard}>
+            <View style={styles.heroBadge}>
+              <Ionicons name="sparkles" size={12} color={Colors.accent} />
+              <Text style={styles.heroBadgeText}>Detection complete</Text>
+            </View>
+            <Text style={styles.heroTitle}>Fresh analysis</Text>
+            <Text style={styles.heroSubtitle}>
+              Built from 1 capture with trichome and stigma scoring.
+            </Text>
+          </View>
+
+          {/* Maturity prediction card */}
+          <View style={[styles.predictionCard, { backgroundColor: stageColors.background }]}>
+            <View style={styles.predictionTop}>
+              <Text style={styles.predictionLabel}>MATURITY PREDICTION</Text>
+              <View style={styles.stigmaBadge}>
+                <Text style={styles.stigmaBadgeText}>{result.stigma_result.total_count} stigmas</Text>
               </View>
-              <MaturityBadge stage={MOCK_RESULT.maturity_stage} size="sm" />
             </View>
-          </View>
-
-          <View style={styles.recommendationCard}>
-            <View style={styles.cardLabelRow}>
-              <Ionicons name="bulb-outline" size={16} color={Colors.accent} />
-              <Text style={styles.cardLabel}>HARVEST RECOMMENDATION</Text>
-            </View>
-            <Text style={styles.recommendationText}>
-              {MOCK_RESULT.recommendation}
+            <Text style={[styles.predictionHeading, { color: stageColors.text }]}>
+              {prediction.heading}
             </Text>
-            <View style={styles.recBlobBg} />
+            <Text style={styles.predictionSubtitle}>{prediction.subtitle}</Text>
           </View>
 
-          <View style={styles.imagePlaceholder}>
-            <View style={styles.imagePlaceholderIcon}>
-              <Ionicons name="image-outline" size={32} color={Colors.textMuted} />
+          {/* Key stats row */}
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{cloudyPct}%</Text>
+              <Text style={styles.statLabel}>Cloudy trichomes</Text>
             </View>
-            <Text style={styles.imagePlaceholderText}>Annotated Image</Text>
-            <Text style={styles.imagePlaceholderSub}>
-              Trichome detections highlighted in real-time
-            </Text>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{orangePct}%</Text>
+              <Text style={styles.statLabel}>Orange stigmas</Text>
+            </View>
           </View>
 
+          {/* ── TRICHOME PROFILE ── */}
           <View style={styles.sectionHeader}>
-            <Ionicons name="bar-chart-outline" size={18} color={Colors.accent} />
-            <Text style={styles.sectionTitle}>Analysis Details</Text>
+            <Text style={styles.sectionTitle}>Trichome profile</Text>
+            <Text style={styles.sectionSubtitle}>Tap any card to inspect detections</Text>
           </View>
 
-          <View style={styles.analysisCard}>
-            <View style={styles.cardTopRow}>
-              <View style={styles.cardLabelRow}>
-                <View style={[styles.dot, { backgroundColor: "#e2e8f0" }]} />
-                <Text style={styles.cardLabel}>TRICHOME DISTRIBUTION</Text>
-              </View>
-              <View style={styles.countPill}>
-                <Text style={styles.countPillText}>{MOCK_RESULT.trichome.total} DETECTED</Text>
-              </View>
-            </View>
-            <SegmentedBar
+          <View style={styles.donutRow}>
+            <DonutChart
+              size={170}
+              strokeWidth={22}
+              centerLabel={`${dominantPct}%`}
+              centerSublabel={dominantType.charAt(0).toUpperCase() + dominantType.slice(1)}
               segments={[
-                { color: "#6f758b", value: MOCK_RESULT.trichome.clear, label: "Clear" },
-                { color: "#dfe4fe", value: MOCK_RESULT.trichome.cloudy, label: "Cloudy" },
-                { color: "#d97706", value: MOCK_RESULT.trichome.amber, label: "Amber" },
+                { value: clearPct, color: TRICHOME_COLORS.clear },
+                { value: cloudyPct, color: TRICHOME_COLORS.cloudy },
+                { value: amberPct, color: TRICHOME_COLORS.amber },
               ]}
             />
-          </View>
-
-          <View style={styles.analysisCard}>
-            <View style={styles.cardTopRow}>
-              <View style={styles.cardLabelRow}>
-                <View style={[styles.dot, { backgroundColor: Colors.tertiary }]} />
-                <Text style={styles.cardLabel}>PISTIL MATURATION</Text>
-              </View>
-              <View style={styles.countPill}>
-                <Text style={styles.countPillText}>{MOCK_RESULT.stigma.total} DETECTED</Text>
-              </View>
+            <View style={styles.donutLegend}>
+              {trichomeTypes.map((t) => (
+                <View key={t.type} style={styles.legendRow}>
+                  <View style={[styles.legendDot, { backgroundColor: TRICHOME_COLORS[t.type] }]} />
+                  <Text style={styles.legendLabel}>{t.label}</Text>
+                  <Text style={[styles.legendPct, { color: TRICHOME_COLORS[t.type] }]}>{t.value}%</Text>
+                </View>
+              ))}
             </View>
-            <SegmentedBar
-              segments={[
-                { color: "#d97706", value: MOCK_RESULT.stigma.orange, label: "Orange" },
-                { color: Colors.accent, value: MOCK_RESULT.stigma.green, label: "Green" },
-              ]}
-            />
           </View>
 
-          <View style={styles.reviewBanner}>
-            <Ionicons name="pencil-outline" size={20} color={Colors.warning} />
-            <Text style={styles.reviewBannerText}>Want to adjust values?</Text>
-            <Pressable style={styles.reviewButton} onPress={() => router.push("/review")}>
-              <Text style={styles.reviewButtonText}>Manual Edit</Text>
+          {/* Dominant phase card */}
+          <View style={styles.dominantCard}>
+            <Text style={styles.dominantLabel}>DOMINANT PHASE</Text>
+            <Text style={styles.dominantTitle}>{dominantPhase.title}</Text>
+            <Text style={styles.dominantDesc}>{dominantPhase.desc}</Text>
+          </View>
+
+          {/* Trichome type bars – tappable */}
+          {trichomeTypes.map((t) => (
+            <Pressable
+              key={t.type}
+              style={styles.typeCard}
+              onPress={() => router.push(`/trichome-samples?type=${t.type}` as never)}
+            >
+              <View style={styles.typeCardTop}>
+                <View style={styles.typeCardLeft}>
+                  <View style={[styles.typeDot, { backgroundColor: TRICHOME_COLORS[t.type] }]} />
+                  <Text style={styles.typeLabel}>{t.label}</Text>
+                </View>
+                <Text style={[styles.typePct, { color: TRICHOME_COLORS[t.type] }]}>{t.value}%</Text>
+              </View>
+              <View style={styles.typeBarTrack}>
+                <View
+                  style={[
+                    styles.typeBarFill,
+                    { width: `${t.value}%`, backgroundColor: TRICHOME_COLORS[t.type] },
+                  ]}
+                />
+              </View>
+              <View style={styles.typeCardBottom}>
+                <Text style={styles.typeCount}>
+                  {dist[t.type]} detections
+                </Text>
+                <View style={styles.openSamplesLink}>
+                  <Text style={styles.openSamplesText}>OPEN SAMPLES</Text>
+                  <Ionicons name="chevron-forward" size={13} color={Colors.accent} />
+                </View>
+              </View>
             </Pressable>
+          ))}
+
+          {/* ── STIGMA COLOR READ ── */}
+          <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+            <Text style={styles.sectionTitle}>Stigma color read</Text>
+            <Text style={styles.sectionSubtitle}>Open the gallery for individual stigma crops</Text>
           </View>
 
-          <View style={styles.actionRow}>
-            <Pressable style={styles.saveButtonWrapper} onPress={() => router.replace("/home")}>
-              {({ pressed }) => (
-                <LinearGradient
-                  colors={Gradients.vitality}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={[styles.saveButton, pressed && styles.pressed]}
-                >
-                  <Ionicons name="checkmark-circle-outline" size={18} color={Colors.accentText} />
-                  <Text style={styles.saveButtonText}>Save Result</Text>
-                </LinearGradient>
-              )}
+          {/* Stigma distribution header */}
+          <View style={styles.stigmaDistHeader}>
+            <Text style={styles.stigmaDistTitle}>Stigma distribution</Text>
+            <View style={[styles.stigmaLeadBadge, { backgroundColor: dominantStigma === "green" ? Colors.accentSurface : "rgba(217,119,6,0.15)" }]}>
+              <Text style={[styles.stigmaLeadText, { color: STIGMA_COLORS[dominantStigma] }]}>
+                {dominantStigma === "green" ? greenPct : orangePct}% lead
+              </Text>
+            </View>
+          </View>
+
+          {/* Large split bar */}
+          <View style={styles.splitBarContainer}>
+            <View style={[styles.splitBarGreen, { flex: greenPct }]}>
+              <Text style={styles.splitBarLabel}>{greenPct}%</Text>
+              <Text style={styles.splitBarSublabel}>Green</Text>
+            </View>
+            <View style={[styles.splitBarOrange, { flex: orangePct }]}>
+              <Text style={styles.splitBarLabel}>{orangePct}%</Text>
+              <Text style={styles.splitBarSublabel}>Orange</Text>
+            </View>
+          </View>
+
+          {/* Stigma type cards */}
+          <View style={styles.stigmaCardsRow}>
+            <Pressable
+              style={[styles.stigmaTypeCard, { borderColor: "rgba(107,255,143,0.2)" }]}
+              onPress={() => router.push("/stigma-samples?type=green" as never)}
+            >
+              <View style={styles.stigmaCardTop}>
+                <View style={[styles.stigmaColorDot, { backgroundColor: Colors.accent }]} />
+                <Text style={styles.stigmaTypeName}>Green</Text>
+              </View>
+              <Text style={styles.stigmaPct}>{greenPct}%</Text>
+              <Text style={styles.stigmaTypeDesc}>Early-stage stigmas</Text>
+              <View style={styles.openSamplesLink}>
+                <Text style={styles.openSamplesText}>OPEN SAMPLES</Text>
+                <Ionicons name="chevron-forward" size={13} color={Colors.accent} />
+              </View>
             </Pressable>
 
             <Pressable
-              style={styles.rescanButton}
-              onPress={() => router.replace("/camera")}
+              style={[styles.stigmaTypeCard, { borderColor: "rgba(217,119,6,0.2)" }]}
+              onPress={() => router.push("/stigma-samples?type=orange" as never)}
             >
-              <Ionicons name="camera-outline" size={18} color={Colors.accent} />
+              <View style={styles.stigmaCardTop}>
+                <View style={[styles.stigmaColorDot, { backgroundColor: "#d97706" }]} />
+                <Text style={styles.stigmaTypeName}>Orange</Text>
+              </View>
+              <Text style={[styles.stigmaPct, { color: "#d97706" }]}>{orangePct}%</Text>
+              <Text style={styles.stigmaTypeDesc}>Ripening stigmas</Text>
+              <View style={styles.openSamplesLink}>
+                <Text style={[styles.openSamplesText, { color: "#d97706" }]}>OPEN SAMPLES</Text>
+                <Ionicons name="chevron-forward" size={13} color="#d97706" />
+              </View>
             </Pressable>
           </View>
+
+          {/* ── SOURCE CAPTURES ── */}
+          <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+            <Text style={styles.sectionTitle}>Source captures</Text>
+            <Text style={styles.sectionSubtitle}>1 review frame</Text>
+          </View>
+
+          {result.annotated_image_url ? (
+            <View style={styles.captureCard}>
+              <Image
+                source={{ uri: result.annotated_image_url }}
+                style={styles.captureImage}
+                resizeMode="cover"
+              />
+              <View style={styles.captureLabel}>
+                <Text style={styles.captureLabelText}>Capture 1</Text>
+                <Ionicons name="arrow-forward" size={14} color={Colors.textSecondary} />
+              </View>
+            </View>
+          ) : (
+            <View style={styles.capturePlaceholder}>
+              <Ionicons name="image-outline" size={28} color={Colors.textMuted} />
+              <Text style={styles.capturePlaceholderText}>Capture 1</Text>
+              <Ionicons name="arrow-forward" size={14} color={Colors.textMuted} />
+            </View>
+          )}
+
+          {/* ── RECOMMENDATION ── */}
+          <View style={styles.recommendationCard}>
+            <View style={styles.recRow}>
+              <Ionicons name="bulb-outline" size={16} color={Colors.accent} />
+              <Text style={styles.recLabel}>HARVEST RECOMMENDATION</Text>
+            </View>
+            <Text style={styles.recText}>{result.recommendation}</Text>
+          </View>
+
+          {/* Actions */}
+          <Pressable onPress={() => router.push("/save-flower" as never)}>
+            {({ pressed }) => (
+              <LinearGradient
+                colors={Gradients.vitality}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.saveButton, pressed && { opacity: 0.88 }]}
+              >
+                <Ionicons name="bookmark-outline" size={18} color={Colors.accentText} />
+                <Text style={styles.saveButtonText}>Save flower</Text>
+              </LinearGradient>
+            )}
+          </Pressable>
+
+          <Pressable style={styles.addMoreButton} onPress={() => router.push("/camera" as never)}>
+            <Ionicons name="add" size={18} color={Colors.textPrimary} />
+            <Text style={styles.addMoreText}>Add more images</Text>
+          </Pressable>
         </ScrollView>
 
-        <BottomNav />
       </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(Colors: ReturnType<typeof useTheme>["Colors"]) { return StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -255,265 +396,430 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 12,
     backgroundColor: Colors.surface,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderSubtle,
   },
   backButton: {
-    padding: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  backLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.textPrimary,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
-    color: Colors.accent,
-    letterSpacing: -0.2,
+    color: Colors.textPrimary,
   },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
+  headerAction: {
+    padding: 4,
   },
   scroll: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingBottom: 32,
     paddingTop: 16,
-  },
-  maturityCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    overflow: "hidden",
-    marginBottom: 12,
-  },
-  maturityAccentBar: {
-    height: 3,
-    width: "100%",
-  },
-  maturityBody: {
-    padding: 20,
     gap: 12,
   },
-  maturityTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+  heroCard: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 20,
+    padding: 20,
+    gap: 8,
   },
-  maturityLabel: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: Colors.textSecondary,
-    letterSpacing: 1.5,
-    marginBottom: 4,
-  },
-  maturityStage: {
-    fontSize: 40,
-    fontWeight: "800",
-    letterSpacing: -1.5,
-  },
-  confidenceGroup: {
-    alignItems: "flex-end",
-    gap: 6,
-  },
-  readyBadge: {
-    backgroundColor: Colors.accentSurface,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: "rgba(107,255,143,0.2)",
-  },
-  readyBadgeText: {
-    fontSize: 9,
-    fontWeight: "800",
-    color: Colors.accent,
-    letterSpacing: 1.5,
-  },
-  confidencePill: {
+  heroBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: Colors.surfaceHighest,
+    gap: 5,
+    backgroundColor: Colors.accentSurface,
+    alignSelf: "flex-start",
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 999,
   },
-  confidenceDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.accent,
-  },
-  confidenceText: {
-    fontSize: 10,
+  heroBadgeText: {
+    fontSize: 11,
     fontWeight: "700",
+    color: Colors.accent,
+    letterSpacing: 0.3,
+  },
+  heroTitle: {
+    fontSize: 26,
+    fontWeight: "800",
     color: Colors.textPrimary,
+    letterSpacing: -0.5,
   },
-  recommendationCard: {
-    backgroundColor: Colors.surfaceElevated,
+  heroSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 19,
+  },
+  predictionCard: {
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    gap: 10,
-    overflow: "hidden",
-  },
-  cardLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    padding: 18,
     gap: 6,
   },
-  cardLabel: {
+  predictionTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  predictionLabel: {
     fontSize: 10,
     fontWeight: "800",
     color: Colors.textSecondary,
     letterSpacing: 1.5,
-    textTransform: "uppercase",
   },
-  recommendationText: {
-    fontSize: 14,
+  stigmaBadge: {
+    backgroundColor: "rgba(255,255,255,0.12)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  stigmaBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
     color: Colors.textPrimary,
-    lineHeight: 22,
   },
-  recBlobBg: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    padding: 16,
-    opacity: 0.06,
+  predictionHeading: {
+    fontSize: 26,
+    fontWeight: "800",
+    letterSpacing: -0.5,
   },
-  imagePlaceholder: {
+  predictionSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 19,
+  },
+  statsRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  statCard: {
+    flex: 1,
     backgroundColor: Colors.surface,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    borderStyle: "dashed",
-    aspectRatio: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
-    gap: 8,
+    borderRadius: 14,
+    padding: 16,
+    gap: 4,
   },
-  imagePlaceholderIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.surfaceHighest,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-  },
-  imagePlaceholderText: {
-    fontSize: 15,
-    fontWeight: "700",
+  statValue: {
+    fontSize: 28,
+    fontWeight: "800",
     color: Colors.textPrimary,
+    letterSpacing: -0.5,
   },
-  imagePlaceholderSub: {
+  statLabel: {
     fontSize: 12,
-    color: Colors.textMuted,
-    textAlign: "center",
-    paddingHorizontal: 32,
+    color: Colors.textSecondary,
+    fontWeight: "500",
   },
   sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
+    gap: 2,
+    marginBottom: 4,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
     color: Colors.textPrimary,
   },
-  analysisCard: {
+  sectionSubtitle: {
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
+  donutRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: Colors.surface,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
-    marginBottom: 12,
     gap: 16,
   },
-  cardTopRow: {
+  donutLegend: {
+    flex: 1,
+    gap: 10,
+  },
+  legendRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendLabel: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+  },
+  legendPct: {
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  dominantCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 16,
+    gap: 4,
+  },
+  dominantLabel: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: Colors.textMuted,
+    letterSpacing: 1.5,
+  },
+  dominantTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+  },
+  dominantDesc: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+  },
+  typeCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 14,
+    gap: 10,
+  },
+  typeCardTop: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  dot: {
-    width: 8,
+  typeCardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  typeDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  typeLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+  },
+  typePct: {
+    fontSize: 17,
+    fontWeight: "800",
+  },
+  typeBarTrack: {
     height: 8,
     borderRadius: 4,
-  },
-  countPill: {
     backgroundColor: Colors.surfaceHighest,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    overflow: "hidden",
+  },
+  typeBarFill: {
+    height: "100%",
     borderRadius: 4,
   },
-  countPillText: {
-    fontSize: 9,
-    fontWeight: "800",
-    color: Colors.textPrimary,
-    letterSpacing: 0.5,
-  },
-  reviewBanner: {
+  typeCardBottom: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.warningSurface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "rgba(120,53,15,0.3)",
-    padding: 14,
-    marginBottom: 16,
-    gap: 10,
+    justifyContent: "space-between",
   },
-  reviewBannerText: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#fde68a",
+  typeCount: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    fontWeight: "500",
   },
-  reviewButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-    backgroundColor: "rgba(217,119,6,0.15)",
+  openSamplesLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
   },
-  reviewButtonText: {
+  openSamplesText: {
     fontSize: 11,
     fontWeight: "800",
-    color: Colors.warning,
-    letterSpacing: 1,
-    textTransform: "uppercase",
+    color: Colors.accent,
+    letterSpacing: 0.8,
   },
-  actionRow: {
+  stigmaDistHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  stigmaDistTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+  },
+  stigmaLeadBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  stigmaLeadText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  splitBarContainer: {
+    flexDirection: "row",
+    height: 64,
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  splitBarGreen: {
+    backgroundColor: Colors.accentDark,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 1,
+  },
+  splitBarOrange: {
+    backgroundColor: "#b45309",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 1,
+  },
+  splitBarLabel: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#fff",
+  },
+  splitBarSublabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.7)",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  stigmaCardsRow: {
     flexDirection: "row",
     gap: 10,
-    alignItems: "center",
   },
-  saveButtonWrapper: {
+  stigmaTypeCard: {
     flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    gap: 6,
+  },
+  stigmaCardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  stigmaColorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  stigmaTypeName: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+  },
+  stigmaPct: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: Colors.accent,
+    letterSpacing: -0.5,
+  },
+  stigmaTypeDesc: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginBottom: 4,
+  },
+  captureCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    overflow: "hidden",
+    width: 160,
+  },
+  captureImage: {
+    width: "100%",
+    height: 120,
+    backgroundColor: Colors.surfaceHighest,
+  },
+  captureLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 10,
+  },
+  captureLabelText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+  },
+  capturePlaceholder: {
+    width: 160,
+    height: 120,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  capturePlaceholderText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.textMuted,
+  },
+  recommendationCard: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 14,
+    padding: 16,
+    gap: 8,
+  },
+  recRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  recLabel: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: Colors.textSecondary,
+    letterSpacing: 1.5,
+  },
+  recText: {
+    fontSize: 13,
+    color: Colors.textPrimary,
+    lineHeight: 20,
   },
   saveButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 15,
+    paddingVertical: 16,
     borderRadius: 999,
     gap: 8,
-  },
-  pressed: {
-    opacity: 0.88,
   },
   saveButtonText: {
     fontSize: 15,
     fontWeight: "700",
     color: Colors.accentText,
   },
-  rescanButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: Colors.accent,
+  addMoreButton: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(107,255,143,0.05)",
+    paddingVertical: 15,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    gap: 6,
   },
-});
+  addMoreText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+  },
+}); }

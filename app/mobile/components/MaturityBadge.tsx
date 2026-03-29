@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
-import { getMaturityColors } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 
 type Props = {
   stage: string;
@@ -7,6 +7,7 @@ type Props = {
 };
 
 export function MaturityBadge({ stage, size = "md" }: Props) {
+  const { getMaturityColors } = useTheme();
   const colors = getMaturityColors(stage);
 
   return (

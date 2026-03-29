@@ -6,13 +6,17 @@ import {
   Image,
   StyleSheet,
   Alert,
+  ActivityIndicator,
   ScrollView,
   Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import { Colors } from "../constants/theme";
+import { ApiClient } from "../api/client";
+import { AnalysisResultStore } from "../store/analysisResult";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const GRID_PADDING = 20;
@@ -22,6 +26,7 @@ const CELL_SIZE = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP * 2) / 3;
 export default function CameraScreen() {
   const router = useRouter();
   const [images, setImages] = useState<string[]>([]);
+  const [analyzing, setAnalyzing] = useState(false);
 
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -63,6 +68,28 @@ export default function CameraScreen() {
 
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const analyze = async () => {
+    if (images.length === 0) return;
+    setAnalyzing(true);
+    try {
+      const resized = await ImageManipulator.manipulateAsync(
+        images[0],
+        [{ resize: { width: 1200 } }],
+        { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      const result = await ApiClient.analyzeImage(resized.uri, "local-dev");
+      AnalysisResultStore.set(result);
+      router.push("/results");
+    } catch (error) {
+      Alert.alert(
+        "Analysis failed",
+        error instanceof Error ? error.message : "Could not reach the server. Check your connection."
+      );
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const analyzeLabel =
@@ -130,19 +157,23 @@ export default function CameraScreen() {
         <Pressable
           style={[
             styles.analyzeButton,
-            images.length === 0 && styles.analyzeButtonDisabled,
+            (images.length === 0 || analyzing) && styles.analyzeButtonDisabled,
           ]}
-          disabled={images.length === 0}
-          onPress={() => router.push("/results")}
+          disabled={images.length === 0 || analyzing}
+          onPress={analyze}
         >
-          <Text
-            style={[
-              styles.analyzeButtonText,
-              images.length === 0 && styles.analyzeButtonTextDisabled,
-            ]}
-          >
-            {analyzeLabel}
-          </Text>
+          {analyzing ? (
+            <ActivityIndicator color={Colors.accentText} />
+          ) : (
+            <Text
+              style={[
+                styles.analyzeButtonText,
+                images.length === 0 && styles.analyzeButtonTextDisabled,
+              ]}
+            >
+              {analyzeLabel}
+            </Text>
+          )}
         </Pressable>
       </View>
     </SafeAreaView>
