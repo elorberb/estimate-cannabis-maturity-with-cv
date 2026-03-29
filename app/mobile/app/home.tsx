@@ -1,31 +1,32 @@
-import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
+import { useState, useCallback } from "react";
+import { View, Text, Pressable, StyleSheet, ScrollView, Image, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Colors, Gradients } from "../constants/theme";
 import { MaturityBadge } from "../components/MaturityBadge";
-import { BottomNav } from "../components/BottomNav";
-
-const MOCK_RECENT = [
-  {
-    id: "1",
-    created_at: "2026-03-17T10:00:00Z",
-    maturity_stage: "peak",
-    recommendation: "Harvest now for peak potency. Trichomes are at optimal cloudy stage.",
-    image_url: "",
-  },
-  {
-    id: "2",
-    created_at: "2026-03-14T14:30:00Z",
-    maturity_stage: "developing",
-    recommendation: "Wait 5–7 more days. Cloudy trichomes still developing.",
-    image_url: "",
-  },
-];
+import { ApiClient } from "../api/client";
+import { AnalysisListItem } from "../api/types";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { Colors, Gradients } = useTheme();
+  const [recentAnalyses, setRecentAnalyses] = useState<AnalysisListItem[]>([]);
+  const [loadingRecent, setLoadingRecent] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoadingRecent(true);
+      ApiClient.listAnalyses(2)
+        .then((res) => setRecentAnalyses(res.items))
+        .catch(() => setRecentAnalyses([]))
+        .finally(() => setLoadingRecent(false));
+    }, [])
+  );
+
+  const styles = createStyles(Colors);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -113,7 +114,11 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          {MOCK_RECENT.length === 0 ? (
+          {loadingRecent ? (
+            <View style={styles.emptyCard}>
+              <ActivityIndicator color={Colors.accent} />
+            </View>
+          ) : recentAnalyses.length === 0 ? (
             <View style={styles.emptyCard}>
               <View style={styles.emptyIconBox}>
                 <Ionicons name="camera-outline" size={28} color={Colors.textMuted} />
@@ -134,7 +139,7 @@ export default function HomeScreen() {
               </Pressable>
             </View>
           ) : (
-            MOCK_RECENT.map((item) => {
+            recentAnalyses.map((item) => {
               const date = new Date(item.created_at).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
@@ -143,11 +148,15 @@ export default function HomeScreen() {
                 <Pressable
                   key={item.id}
                   style={styles.recentCard}
-                  onPress={() => router.push("/results")}
+                  onPress={() => router.push({ pathname: "/results", params: { id: item.id } })}
                 >
-                  <View style={styles.recentThumbnail}>
-                    <Ionicons name="leaf-outline" size={22} color={Colors.textMuted} />
-                  </View>
+                  {item.annotated_image_url ? (
+                    <Image source={{ uri: item.annotated_image_url }} style={styles.recentThumbnail} resizeMode="cover" />
+                  ) : (
+                    <View style={styles.recentThumbnailPlaceholder}>
+                      <Ionicons name="leaf-outline" size={22} color={Colors.textMuted} />
+                    </View>
+                  )}
                   <View style={styles.recentContent}>
                     <View style={styles.recentTopRow}>
                       <Text style={styles.recentDate}>{date}</Text>
@@ -164,13 +173,12 @@ export default function HomeScreen() {
           )}
         </ScrollView>
 
-        <BottomNav />
       </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(Colors: ReturnType<typeof useTheme>["Colors"]) { return StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -405,6 +413,12 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 12,
     backgroundColor: Colors.surfaceHighest,
+  },
+  recentThumbnailPlaceholder: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: Colors.surfaceHighest,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -429,4 +443,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 17,
   },
-});
+}); }

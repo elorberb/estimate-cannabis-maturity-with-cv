@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     modal_app_name: str = "cannabis-maturity-inference"
 
     detection_model_path: str = "../../checkpoints/trichome_detection/yolov9_best.pt"
-    classification_model_path: str = "../../checkpoints/trichome_classification/yolov8/large_fold0.pt"
+    classification_model_path: str = "../../checkpoints/trichome_classification/yolov8/medium_fold0.pt"
     segmentation_model_path: str = "../../checkpoints/stigma_segmentation/yolov8s_best.pt"
 
     log_level: str = "INFO"

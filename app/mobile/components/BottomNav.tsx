@@ -1,7 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useRouter, usePathname } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 
 const NAV_ITEMS = [
   { label: "Home", icon: "leaf-outline" as const, activeIcon: "leaf" as const, route: "/home" },
@@ -13,6 +13,8 @@ const NAV_ITEMS = [
 export function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
+  const { Colors } = useTheme();
+  const styles = createStyles(Colors);
 
   return (
     <View style={styles.container}>
@@ -39,33 +41,35 @@ export function BottomNav() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    backgroundColor: "rgba(23,31,54,0.92)",
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingBottom: 24,
-    paddingTop: 10,
-  },
-  item: {
-    flex: 1,
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  itemActive: {
-    backgroundColor: Colors.accentSurface,
-  },
-  label: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: Colors.textMuted,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  labelActive: {
-    color: Colors.accent,
-  },
-});
+function createStyles(Colors: ReturnType<typeof useTheme>["Colors"]) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: "row",
+      backgroundColor: Colors.surface,
+      borderTopWidth: 1,
+      borderTopColor: Colors.border,
+      paddingBottom: 24,
+      paddingTop: 10,
+    },
+    item: {
+      flex: 1,
+      alignItems: "center",
+      gap: 4,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    itemActive: {
+      backgroundColor: Colors.accentSurface,
+    },
+    label: {
+      fontSize: 10,
+      fontWeight: "700",
+      color: Colors.textMuted,
+      letterSpacing: 0.5,
+      textTransform: "uppercase",
+    },
+    labelActive: {
+      color: Colors.accent,
+    },
+  });
+}

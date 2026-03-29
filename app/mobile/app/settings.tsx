@@ -1,39 +1,16 @@
-import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView, Alert, Switch } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Colors } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 
-function SectionLabel({ label }: { label: string }) {
-  return <Text style={styles.sectionLabel}>{label}</Text>;
-}
-
-function SettingsRow({
-  label,
-  value,
-  onPress,
-  danger,
-}: {
-  label: string;
-  value?: string;
-  onPress: () => void;
-  danger?: boolean;
-}) {
-  return (
-    <Pressable style={styles.row} onPress={onPress}>
-      <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>
-        {label}
-      </Text>
-      {value ? (
-        <Text style={styles.rowValue} numberOfLines={1}>{value}</Text>
-      ) : (
-        <Text style={styles.rowChevron}>›</Text>
-      )}
-    </Pressable>
-  );
+function SectionLabel({ label, colors }: { label: string; colors: ReturnType<typeof useTheme>["Colors"] }) {
+  return <Text style={{ fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 1, marginBottom: 8, marginTop: 4 }}>{label}</Text>;
 }
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { Colors, scheme, toggleTheme } = useTheme();
+  const styles = createStyles(Colors);
 
   const handleClearData = () => {
     Alert.alert(
@@ -71,31 +48,34 @@ export default function SettingsScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        <SectionLabel label="ACCOUNT" />
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <SectionLabel label="APPEARANCE" colors={Colors} />
         <View style={styles.card}>
-          <SettingsRow label="Sign Out" onPress={handleSignOut} danger />
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Light Mode</Text>
+            <Switch
+              value={scheme === "light"}
+              onValueChange={toggleTheme}
+              trackColor={{ false: Colors.border, true: Colors.accent }}
+              thumbColor={Colors.surface}
+            />
+          </View>
         </View>
 
-        <SectionLabel label="APP" />
+        <SectionLabel label="ACCOUNT" colors={Colors} />
         <View style={styles.card}>
-          <SettingsRow
-            label="Backend URL"
-            value="192.168.1.213:8000"
-            onPress={() => {}}
-          />
+          <Pressable style={styles.row} onPress={handleSignOut}>
+            <Text style={[styles.rowLabel, styles.rowLabelDanger]}>Sign Out</Text>
+            <Text style={styles.rowChevron}>›</Text>
+          </Pressable>
         </View>
 
-        <SectionLabel label="DATA" />
+        <SectionLabel label="DATA" colors={Colors} />
         <View style={styles.card}>
-          <SettingsRow
-            label="Clear Local Data"
-            onPress={handleClearData}
-            danger
-          />
+          <Pressable style={styles.row} onPress={handleClearData}>
+            <Text style={[styles.rowLabel, styles.rowLabelDanger]}>Clear Local Data</Text>
+            <Text style={styles.rowChevron}>›</Text>
+          </Pressable>
         </View>
 
         <Text style={styles.version}>AgriVision · v0.1.0</Text>
@@ -104,86 +84,40 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.surfaceElevated,
-  },
-  backText: {
-    fontSize: 15,
-    color: Colors.accent,
-    fontWeight: "500",
-    width: 60,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 17,
-    fontWeight: "700",
-    color: Colors.textPrimary,
-  },
-  headerSpacer: {
-    width: 60,
-  },
-  scroll: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 48,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: Colors.textMuted,
-    letterSpacing: 1,
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 24,
-    overflow: "hidden",
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  rowLabel: {
-    fontSize: 15,
-    color: Colors.textPrimary,
-    fontWeight: "500",
-  },
-  rowLabelDanger: {
-    color: Colors.danger,
-  },
-  rowValue: {
-    fontSize: 13,
-    color: Colors.textMuted,
-    fontFamily: "monospace",
-    maxWidth: 160,
-  },
-  rowChevron: {
-    fontSize: 20,
-    color: Colors.textMuted,
-  },
-  version: {
-    textAlign: "center",
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginTop: 8,
-  },
-});
+function createStyles(Colors: ReturnType<typeof useTheme>["Colors"]) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Colors.background },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 20,
+      paddingTop: 8,
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: Colors.surfaceElevated,
+    },
+    backText: { fontSize: 15, color: Colors.accent, fontWeight: "500", width: 60 },
+    headerTitle: { flex: 1, textAlign: "center", fontSize: 17, fontWeight: "700", color: Colors.textPrimary },
+    headerSpacer: { width: 60 },
+    scroll: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 48 },
+    card: {
+      backgroundColor: Colors.surface,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      marginBottom: 24,
+      overflow: "hidden",
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+    },
+    rowLabel: { fontSize: 15, color: Colors.textPrimary, fontWeight: "500" },
+    rowLabelDanger: { color: Colors.danger },
+    rowChevron: { fontSize: 20, color: Colors.textMuted },
+    version: { textAlign: "center", fontSize: 12, color: Colors.textMuted, marginTop: 8 },
+  });
+}
