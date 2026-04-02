@@ -116,7 +116,9 @@ class LocalInferenceService:
             cv2.imwrite(str(run_dir / "trichomes" / f"{i}_{det.trichome_type.value}.jpg"), crop)
 
         for i, det in enumerate(result.stigma_result.detections):
-            crop = image_bgr[int(det.bbox.y_min):int(det.bbox.y_max), int(det.bbox.x_min):int(det.bbox.x_max)]
+            pts = np.array(det.polygon, dtype=np.int32)
+            x, y, w, h = cv2.boundingRect(pts)
+            crop = image_bgr[y : y + h, x : x + w]
             cv2.imwrite(str(run_dir / "stigmas" / f"{i}.jpg"), crop)
 
         summary = result.model_dump(exclude={"annotated_image_b64", "trichome_crops_b64", "stigma_crops_b64"})

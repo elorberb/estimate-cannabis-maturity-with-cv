@@ -39,7 +39,7 @@ class TrichomeResult(BaseModel):
 
 
 class StigmaDetection(BaseModel):
-    bbox: BoundingBox
+    polygon: list[list[int]]
     green_ratio: float
     orange_ratio: float
 

@@ -5,7 +5,7 @@ from typing import Any
 import cv2
 import numpy as np
 
-from cannabis_maturity.models import BoundingBox, StigmaDetection, StigmaResult
+from cannabis_maturity.models import StigmaDetection, StigmaResult
 from cannabis_maturity.stigma_color_classifier import StigmaColorClassifier
 
 
@@ -22,25 +22,33 @@ class StigmaDetector:
             return StigmaResult(detections=[], avg_green_ratio=0.0, avg_orange_ratio=0.0, total_count=0)
 
         masks = result.masks.data.cpu().numpy()
-        boxes = result.boxes.xyxy.cpu().numpy()
         h, w = image_bgr.shape[:2]
         image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
 
         detections: list[StigmaDetection] = []
 
-        for i, mask in enumerate(masks):
+        for mask in masks:
             resized_mask = cv2.resize(mask, (w, h))
             binary_mask = (resized_mask > 0.5).astype(np.uint8)
-            segmented = cv2.bitwise_and(image_rgb, image_rgb, mask=binary_mask)
 
-            x_min, y_min, x_max, y_max = map(int, boxes[i])
-            crop_rgb = segmented[y_min:y_max, x_min:x_max]
+            contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            if not contours:
+                continue
+            largest = max(contours, key=cv2.contourArea)
+            pts = largest.squeeze()
+            if pts.ndim == 1:
+                pts = pts[np.newaxis, :]
+            polygon: list[list[int]] = pts.tolist()
+
+            x, y, cw, ch = cv2.boundingRect(largest)
+            segmented = cv2.bitwise_and(image_rgb, image_rgb, mask=binary_mask)
+            crop_rgb = segmented[y : y + ch, x : x + cw]
 
             green_ratio, orange_ratio = self._color_classifier.classify(crop_rgb)
 
             detections.append(
                 StigmaDetection(
-                    bbox=BoundingBox(x_min=float(x_min), y_min=float(y_min), x_max=float(x_max), y_max=float(y_max)),
+                    polygon=polygon,
                     green_ratio=green_ratio,
                     orange_ratio=orange_ratio,
                 )

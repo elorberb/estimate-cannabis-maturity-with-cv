@@ -27,7 +27,6 @@ def test_detect_computes_ratios() -> None:
     result = MagicMock()
     mask = np.ones((100, 100), dtype=np.float32)
     result.masks.data.cpu.return_value.numpy.return_value = np.array([mask])
-    result.boxes.xyxy.cpu.return_value.numpy.return_value = np.array([[10, 10, 90, 90]])
     seg_model.predict.return_value = [result]
 
     classifier = MagicMock(spec=StigmaColorClassifier)
@@ -39,6 +38,8 @@ def test_detect_computes_ratios() -> None:
     assert len(res.detections) == 1
     assert res.detections[0].green_ratio == 0.7
     assert res.detections[0].orange_ratio == 0.3
+    assert isinstance(res.detections[0].polygon, list)
+    assert all(len(pt) == 2 for pt in res.detections[0].polygon)
 
 
 def test_avg_ratios_computed_correctly() -> None:
@@ -46,10 +47,6 @@ def test_avg_ratios_computed_correctly() -> None:
     result = MagicMock()
     mask = np.ones((100, 100), dtype=np.float32)
     result.masks.data.cpu.return_value.numpy.return_value = np.array([mask, mask])
-    result.boxes.xyxy.cpu.return_value.numpy.return_value = np.array([
-        [10, 10, 50, 50],
-        [50, 50, 90, 90],
-    ])
     seg_model.predict.return_value = [result]
 
     classifier = MagicMock(spec=StigmaColorClassifier)
