@@ -5,6 +5,10 @@
 expo-env.d.ts
 # @end expo-cli
 
+node_modules/
+.expo/
+.DS_Store
+
 # .env contains only safe defaults (localhost URL) — override locally with .env.local
 !.env
 .env.local
