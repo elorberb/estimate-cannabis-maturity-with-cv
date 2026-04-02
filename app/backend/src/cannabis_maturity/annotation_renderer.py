@@ -29,8 +29,7 @@ class AnnotationRenderer:
             cv2.rectangle(annotated, pt1, pt2, color, 2)
 
         for det in stigma_result.detections:
-            pt1 = (int(det.bbox.x_min), int(det.bbox.y_min))
-            pt2 = (int(det.bbox.x_max), int(det.bbox.y_max))
-            cv2.rectangle(annotated, pt1, pt2, AnnotationRenderer._STIGMA_COLOR, 2)
+            pts = np.array(det.polygon, dtype=np.int32).reshape((-1, 1, 2))
+            cv2.polylines(annotated, [pts], isClosed=True, color=AnnotationRenderer._STIGMA_COLOR, thickness=2)
 
         return annotated

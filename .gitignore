@@ -72,6 +72,7 @@ src/utils/google_drive_utils/*.csv
 
 # datasets
 datasets/
+/datasets/
 
 # Debug inference output
 inference_samples/
