@@ -1,5 +1,6 @@
 import { View } from "react-native";
 import { Stack, usePathname } from "expo-router";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ThemeProvider } from "../contexts/ThemeContext";
 import { BottomNav } from "../components/BottomNav";
 
@@ -33,8 +34,10 @@ function AppShell() {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <AppShell />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <AppShell />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView, Image } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../contexts/ThemeContext";
 import { DonutChart } from "../components/DonutChart";
+import { ZoomableImage } from "../components/ZoomableImage";
 import { AnalyzeResponse, TrichomeType } from "../api/types";
 import { AnalysisResultStore } from "../store/analysisResult";
 import { ApiClient } from "../api/client";
@@ -56,7 +57,7 @@ const TRICHOME_COLORS: Record<TrichomeType, string> = {
 };
 
 const STIGMA_COLORS = {
-  green: "#6bff8f",
+  green: "#52c97a",
   orange: "#d97706",
 };
 
@@ -327,9 +328,10 @@ export default function ResultsScreen() {
 
           {result.annotated_image_url ? (
             <View style={styles.captureCard}>
-              <Image
-                source={{ uri: result.annotated_image_url }}
+              <ZoomableImage
+                uri={result.annotated_image_url}
                 style={styles.captureImage}
+                imageStyle={styles.captureImage}
                 resizeMode="cover"
               />
               <View style={styles.captureLabel}>
